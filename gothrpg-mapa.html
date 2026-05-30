@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap"/> 
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap"/> 
+    <style>
+        /* Tus estilos originales (sin cambios) */
+        body { margin: 0; overflow: hidden; background: #050505; }
+        #map:before {
+            content: ''; 
+            opacity: 1; 
+            z-index: 999; 
+            position: absolute; 
+            top: 0; 
+            pointer-events: none; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(to bottom, #050608 0, rgba(0, 0, 0, 0) 35%);
+        }
+
+      ::-webkit-scrollbar-track {background-color: transparent;
+border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background: #0F0F0F}::-webkit-scrollbar-thumb {background: rgba(255, 255, 255, 0.1); border-radius: 2px; -moz-border-radius: 2px}::-webkit-scrollbar-thumb:hover {background: var(--accent2)}
+        :root {
+            --accent1: #D30000; --accent2: rgba(211, 0, 0, 0.6);
+            --title: #FFFFFF; --text: #D1D5DB; --f-deco: 'Thrones of Westeros', serif;
+            --border1: rgba(160, 80, 80, 0.2); --bckg-op-black: rgba(5, 5, 5, 0.96);
+            --f-body: 'Montserrat', sans-serif; --f-title: 'Cinzel', serif;
+        }
+        .map-app { position: relative; width: 100%; height: 100vh; background: #050505; overflow: hidden; font-family: var(--f-body); }
+        .leaflet-container { background: #050505 !important; }
+        .map-background { z-index: 100 !important; opacity: 1 !important; }
+        .leaflet-control-attribution { display: none !important; }
+        .leaflet-control-zoom { display: none !important; }
+        .custom-zoom-controls { position: absolute; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+        .zoom-button, .reset-control { width: 35px; height: 35px; background: rgb(19 19 19 / 50%); color: #fff; border-radius: 10px; cursor: pointer; font-weight: 300; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35); }
+        .zoom-button:hover, .reset-control:hover { color: var(--accent1); border-color: var(--accent1); background: rgba(30, 0, 0, 0.9); box-shadow: 0 0 25px var(--accent2), inset 0 0 10px rgba(211, 0, 0, 0.2); }
+        .zoom-button:active, .reset-control:active { background: rgba(50, 0, 0, 0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.8), inset 0 0 15px rgba(211, 0, 0, 0.3); }
+      /* Estado deshabilitado para los botones */
+.zoom-button.disabled {
+    opacity: 0.4;
+    pointer-events: none; /* Evita que se pueda hacer click */
+    filter: grayscale(1); /* Opcional: le quita el color para que se vea más 'muerto' */
+    cursor: not-allowed;
+}
+        .left-sidebar { position: absolute; top: 0; left: -450px; width: 400px; height: 100%; background: var(--bckg-op-black); backdrop-filter: blur(40px); z-index: 2000; transition: left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); border-right: 2px solid var(--border1); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.8); will-change: left; }
+        .left-sidebar.open { left: 0; }
+        .infoimg { width: 100%; height: 260px; background-size: cover !important; background-position: center !important; position: relative; border-bottom: 4px solid var(--accent1); }
+        .infoimg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bckg-op-black), transparent 80%); }
+        .sidebar-content { padding: 30px 25px; overflow-y: auto; flex-grow: 1; }
+        .sidebar-header h2 { font-family: var(--f-title); color: var(--title); font-size: 26px; letter-spacing: 3px; border-left: 4px solid var(--accent1); padding-left: 15px; margin: 0 0 20px 0; }
+        .infotext { font-size: 12px; line-height: 1.7; color: var(--text); background: #100f0f; padding: 15px; outline: 1px solid var(--border1); border: 10px solid #100f0f; margin-bottom: 20px; height: 171px; overflow: auto; text-align: justify; }
+        .ir-btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 55px; background: linear-gradient(135deg, var(--accent1), #8B0000); color: #fff !important; text-decoration: none !important; font-family: var(--f-title); font-weight: 700; font-size: 13px; letter-spacing: 2px; border-radius: 4px; transition: 0.4s; }
+        .ir-btn:hover { filter: brightness(1.2); box-shadow: 0 0 30px var(--accent2); transform: translateY(-3px); }
+        .close-sidebar { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--accent1); cursor: pointer; border-radius: 50%; z-index: 10; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .close-sidebar:hover { background: var(--accent1); transform: rotate(90deg); }
+        .leaflet-marker-icon { pointer-events: none !important; background: transparent; }
+        .westeros-marker, .marker-sigil {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 100%;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            transition: opacity 0.5s ease;
+            pointer-events: auto;
+        }
+        .westeros-marker.hidden, .marker-sigil.hidden {
+            opacity: 0 !important;
+            pointer-events: none !important; 
+        }
+        .region-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.125rem; font-weight: 100; margin-top: 15px; color: white; white-space: nowrap; background: transparent; padding: 2px 0; filter: drop-shadow(0px 0px 5px #000); transform-origin: center; transition: transform 0.1s ease-out, color 0.5s, letter-spacing 0.5s; display: inline-block; will-change: transform; }
+        .westeros-name { font-family: var(--f-deco); font-size: 1.5rem; color: white; white-space: nowrap; letter-spacing: 4px; text-transform: uppercase; margin-top: 10px; filter: drop-shadow(0px 0px 8px #000); text-shadow: 0 0 20px rgb(0 0 0 / 30%); transition: all 0.3s ease; transform-origin: center; display: inline-block; will-change: transform; }
+        .westeros-marker:not(.hidden):hover .westeros-name { text-shadow: 0 0 30px rgb(0 0 0 / 50%); letter-spacing: 6px; }
+        @font-face { font-family:"Thrones of Westeros"; src: url('https://static.tumblr.com/dr1ak2t/Wxuq86swy/gameofthrones-webfont.ttf') }
+        .marker-sigil[data-region="norte"]:hover .region-name {letter-spacing: 0.02em}
+        .marker-sigil[data-region="hierro"]:hover .region-name {letter-spacing: 0.02em}
+        .marker-sigil[data-region="valle"]:hover .region-name {letter-spacing: 0.02em}
+        .marker-sigil[data-region="rios"]:hover .region-name {letter-spacing: 0.02em}
+        .marker-sigil[data-region="oeste"]:hover .region-name {letter-spacing: 0.02em}
+        .marker-sigil[data-region="corona"]:hover .region-name {letter-spacing: 0.02em}
+        .marker-sigil[data-region="dominio"]:hover .region-name {letter-spacing: 0.02em}
+        .marker-sigil[data-region="tormenta"]:hover .region-name {letter-spacing: 0.02em}
+        .marker-sigil[data-region="dorne"]:hover .region-name {letter-spacing: 0.02em}
+    </style>
+</head>
+<body>
+
+<div class="map-app">
+    <aside class="left-sidebar" id="sidebar">
+        <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+        <div class="infoimg" id="sideImg"></div>
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <h2 id="sideTitle">Reino de Poniente</h2>
+            </div>
+            <div class="infotext" id="sideDesc">Bienvenido a Poniente...</div>
+            <a href="#" id="sideLink" class="ir-btn" target="_top">
+               <span id="sideButtonText">EXPLORAR</span>
+            </a>
+        </div>
+    </aside>
+
+    <div id="map" style="width: 100%; height: 100%;"></div>
+    
+    <div class="custom-zoom-controls">
+        <div class="zoom-button" onclick="map.zoomIn()" title="Acercar"><i class="fas fa-plus"></i></div>
+        <div class="zoom-button" onclick="map.zoomOut()" title="Alejar"><i class="fas fa-minus"></i></div>
+        <div class="reset-control" onclick="resetMap()" title="Vista inicial"><i class="fas fa-compass"></i></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// --- DATOS DE LAS REGIONES ---
+const datos = {
+    "f9126568": { t: "Poniente", d: "El continente donde siete reinos luchan por el Trono de Hierro. Un vasto territorio que abarca desde el Muro en el norte hasta las costas meridionales de Dorne, marcado por un clima templado y estaciones erráticas que pueden durar años. Es una tierra de contrastes, con fortalezas imponentes, ciudades bulliciosas y extensos bosques, unida bajo un gobierno central pero constantemente fracturada por las ambiciones de las grandes casas nobles.", img: "https://i.imgur.com/5p3e68o.png", regionClass: "poniente", coords: [1500, 900], esReino: true, esPoniente: true },
+    
+    "f9126567": { t: "El Norte", d: "El reino más antiguo y extenso de Poniente, gobernado por la <b>Casa Stark</b> desde <b>Invernalia</b> con el lema <i>Se Acerca el Invierno</i>. Es una región de bosques densos, montañas escarpadas y fríos intensos, donde los inviernos pueden ser mortales. Su gente es conocida por su resistencia, lealtad y carácter estoico, aferrándose a tradiciones antiguas que perduran desde la Era de los Héroes.", img: "https://i.imgur.com/5oXow2q.jpeg", regionClass: "norte", coords: [1970, 1000], esReino: false },
+    
+    "f9126572": { t: "Islas del Hierro", d: "Un archipiélago de rocas estériles azotado por las tormentas en la costa oeste de Poniente. Gobernadas por la <b>Casa Greyjoy</b> desde <b>Pyke</b>, su lema es <i>Nosotros No Sembramos</i>. Sus habitantes, los hijos del hierro, son temidos navegantes y saqueadores que veneran al <b>Dios Ahogado</b>. Su cultura se basa en la supremacía naval y la antigua costumbre de pagar el precio del hierro, tomando lo que desean por la fuerza.", img: "https://i.imgur.com/AFgaNWk.jpeg", regionClass: "hierro", coords: [1450, 380], esReino: false },
+    
+    "f9126573": { t: "El Valle", d: "Una región de montañas impenetrables que protegen un valle interior fértil y verde, gobernado por la <b>Casa Arryn</b> desde <b>el Nido de Águilas</b>, con el lema <i>Tan Alto como el Honor</i>. Su ubicación fortificada lo ha mantenido aislado de muchas guerras, y su caballería es renombrada en todo el reino.", img: "https://i.imgur.com/Oo0dnUL.jpeg", regionClass: "valle", coords: [1430, 1200], esReino: false },
+    
+    "f9126574": { t: "Tierras de los Ríos", d: "El corazón geográfico de Poniente, una región cruzada por múltiples ríos que la convierten en territorio fértil pero difícil de defender. Gobernada por la <b>Casa Tully</b> desde <b>Aguasdulces</b>, su lema es <i>Familia, Deber, Honor</i>. Ha sido escenario de innumerables batallas y asedios a lo largo de la historia.", img: "https://i.imgur.com/KDsqTJH.jpeg", regionClass: "rios", coords: [1320, 850], esReino: false },
+    
+    "f9126575": { t: "Tierras del Oeste", d: "Colinas ricas en oro y otros minerales que han hecho de esta región la más próspera económicamente de Poniente. Gobernadas por la <b>Casa Lannister</b> desde <b>Roca Casterly</b>, su lema es <i>¡Oye mi Rugido!</i> aunque el más conocido sea <i>Un Lannister siempre paga sus deudas</i>. Su poderío militar se sustenta en su inmensa fortuna. Es una tierra de costas escarpadas, minas profundas y fortalezas inexpugnables.", img: "https://i.imgur.com/UFoQMWw.png", regionClass: "oeste", coords: [1200, 650], esReino: false },
+    
+    "f9126566": { t: "Tierras de la Corona", d: "La región que rodea <b>Desembarco del Rey</b>, sede del Trono de Hierro y centro político de los Siete Reinos. Gobernada directamente por la <b>Casa Targaryen</b>, cuyo lema es <i>Fuego y Sangre</i>, es el corazón del poder real desde que <b>Aegon el Conquistador</b> desembarcara en sus costas. La <b>Fortaleza Roja</b> es el centro neurálgico de las intrigas y decisiones que moldean el futuro del reino.", img: "https://i.imgur.com/BQq9LKU.jpeg", regionClass: "corona", coords: [1165, 1100], esReino: false },
+    
+    "f9139145": { t: "El Dominio", d: "El Dominio es una de las regiones más fértiles y pobladas de Poniente, conocido como el granero del reino por sus interminables campos que alimentan al continente. Gobernado por la <b>Casa Tyrell</b> desde <b>Altojardín</b>, su lema <i>Crecer Fuertes</i> refleja una tierra de verdes colinas, ríos caudalosos como el <b>Mander</b> y una fuerte tradición caballeresca donde la riqueza y la prosperidad son habituales.", img: "https://i.imgur.com/6GwFdw7.jpeg", regionClass: "dominio", coords: [1045, 750], esReino: false },
+    
+    "f9126577": { t: "Tierras de la Tormenta", d: "Costas bravas y bosques ancestrales azotados por los vientos del mar Angosto caracterizan esta región marcial. Gobernada por la <b>Casa Baratheon</b> desde <b>Bastión de Tormentas</b>, su lema es <i>Nuestra es la Furia</i>. Sus señores tienen fama de guerreros tenaces y orgullosos. Es una tierra de leyendas, donde se forjaron grandes héroes y se resistieron innumerables invasiones provenientes del mar.", img: "https://i.imgur.com/A4SBGxR.jpeg", regionClass: "tormenta", coords: [950, 1150], esReino: false },
+    
+    "f9139146": { t: "Dorne", d: "<b>Dorne</b> es la región más meridional y árida de Poniente, con un clima desértico, montañas escarpadas y una cultura única moldeada por la influencia de los <b>Rhoynar</b>. Gobernados por la <b>Casa Nymeros Martell</b> desde <b>Lanza del Sol</b>, su lema <i>Nunca Doblegado, Nunca Roto</i> refleja que jamás fueron conquistados, ni siquiera por los <b>Targaryen</b>, sino que se unieron al reino mediante alianza y matrimonio siglos después. Destacan por practicar la igualdad de primogenitura, permitiendo gobernar a las mujeres, y por su resistencia feroz, sus vinos ácidos y costumbres que los diferencian notablemente del resto de los Siete Reinos.", img: "https://i.imgur.com/SPzMyta.jpeg", regionClass: "dorne", coords: [600, 900], esReino: false }
+};
+// --- CONFIGURACIÓN DEL MAPA (CRS Simple) ---
+const w = 3956;  // ancho de la imagen
+const h = 2577;  // alto de la imagen
+const bounds = [[0, 0], [h, w]];  // Límites para la imagen
+
+// Añadimos un margen de píxeles para que la cámara pueda centrarse en los bordes
+const padding = 150; 
+const cameraBounds = [[-padding, -padding], [h + padding, w + padding]]; 
+
+const map = L.map('map', {
+    crs: L.CRS.Simple,
+    zoomControl: false,
+    maxZoom: 1,
+    minZoom: -2,
+    maxBounds: cameraBounds, // <--- USAMOS LOS LÍMITES EXTENDIDOS
+    maxBoundsViscosity: 1.0
+});
+
+L.imageOverlay('https://i.imgur.com/QloRqbD.jpeg', bounds, {
+    opacity: 1,
+    zIndex: 100,
+    className: 'map-background'
+}).addTo(map);
+
+function calculateMinZoom() {
+    const mapContainer = document.getElementById('map');
+    return Math.log2(mapContainer.clientWidth / w);
+}
+
+let dynamicMinZoom = calculateMinZoom();
+map.setMinZoom(dynamicMinZoom);
+
+const initialCenter = [h/2, w/2];
+map.setView(initialCenter, dynamicMinZoom);
+
+// --- VARIABLES DE ESTADO ---
+let isAnimating = false;
+let isSidebarOpen = false;        // refleja el estado real del sidebar
+let originalView = null;          // vista antes de la primera apertura
+
+// Referencias DOM
+const sidebar = document.getElementById('sidebar');
+const sideTitle = document.getElementById('sideTitle');
+const sideDesc = document.getElementById('sideDesc');
+const sideImg = document.getElementById('sideImg');
+const sideLink = document.getElementById('sideLink');
+const sideButtonText = document.getElementById('sideButtonText');
+
+// --- FUNCIÓN PARA ACTUALIZAR VISIBILIDAD DE MARCADORES ---
+function updateMarkerVisibility() {
+    const zoom = map.getZoom();
+    Object.keys(markers).forEach(key => {
+        const marker = markers[key];
+        if (!marker || !marker._icon) return;
+        const reg = datos[key];
+        const westerosEl = marker._icon.querySelector('.westeros-marker');
+        const regionEl = marker._icon.querySelector('.marker-sigil');
+
+        if (reg.esPoniente && westerosEl) {
+            if (isSidebarOpen) {
+                westerosEl.classList.remove('hidden');
+            } else {
+                if (zoom > -0.2) westerosEl.classList.add('hidden');
+                else westerosEl.classList.remove('hidden');
+            }
+        } else if (regionEl) {
+            if (isSidebarOpen) {
+                regionEl.classList.remove('hidden');
+            } else {
+                if (zoom < -1.5) regionEl.classList.add('hidden');
+                else regionEl.classList.remove('hidden');
+            }
+        }
+    });
+}
+
+// --- FUNCIÓN PARA ESCALAR TEXTO ---
+function adjustTextScale() {
+    const zoom = map.getZoom();
+    const minZoom = dynamicMinZoom;
+    const maxZoom = 1;
+    let scale = 0.97 + (zoom - minZoom) * (1.03 - 0.97) / (maxZoom - minZoom);
+    scale = Math.max(0.97, Math.min(1.03, scale));
+    document.querySelectorAll('.region-name, .westeros-name').forEach(el => {
+        el.style.transform = `scale(${scale})`;
+    });
+}
+
+// --- EVENTOS DEL MAPA ---
+map.on('zoom', () => {
+    adjustTextScale();
+    updateMarkerVisibility();
+});
+map.on('zoomend', updateMarkerVisibility);
+map.on('moveend', () => {
+    // No necesitamos hacer nada especial aquí
+});
+
+  // Función para habilitar/deshabilitar botones de zoom
+function checkZoomLimits() {
+    const zoom = map.getZoom();
+    const min = map.getMinZoom();
+    const max = map.getMaxZoom();
+
+    // Seleccionamos los botones (ajusta los selectores si es necesario)
+    const btnIn = document.querySelector('.zoom-button[title="Acercar"]');
+    const btnOut = document.querySelector('.zoom-button[title="Alejar"]');
+
+    // Lógica para Zoom In
+    if (zoom >= max) {
+        btnIn.classList.add('disabled');
+    } else {
+        btnIn.classList.remove('disabled');
+    }
+
+    // Lógica para Zoom Out
+    if (zoom <= min) {
+        btnOut.classList.add('disabled');
+    } else {
+        btnOut.classList.remove('disabled');
+    }
+}
+
+// Ejecutar la función cuando el mapa termine de cargar y cada vez que cambie el zoom
+map.on('zoomend', checkZoomLimits);
+
+// También la llamamos al inicio para que el estado sea correcto desde el segundo 1
+setTimeout(checkZoomLimits, 500);
+
+// --- MARCADORES ---
+const markers = {};
+let currentZoom = map.getZoom();
+
+Object.keys(datos).forEach(key => {
+    const reg = datos[key];
+    let html, iconSize, iconAnchor, isHidden;
+
+    if (reg.esPoniente) {
+        isHidden = currentZoom > -0.2;
+        html = `
+            <div class="westeros-marker ${isHidden ? 'hidden' : ''}" data-region="${reg.regionClass}">
+                <span class="westeros-name">${reg.t}</span>
+            </div>`;
+        iconSize = [250, 100];
+        iconAnchor = [125, 50];
+    } else {
+        isHidden = currentZoom < -1.5;
+        html = `
+            <div class="marker-sigil ${isHidden ? 'hidden' : ''}" data-region="${reg.regionClass}">
+                <span class="region-name">${reg.t}</span>
+            </div>`;
+        iconSize = [120, 50];
+        iconAnchor = [60, 40];
+    }
+
+    const marker = L.marker(reg.coords, {
+        icon: L.divIcon({ className: '', html: html, iconSize: iconSize, iconAnchor: iconAnchor })
+    }).addTo(map);
+    markers[key] = marker;
+
+    marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        const el = e.target._icon.querySelector('.westeros-marker, .marker-sigil');
+        if (el && el.classList.contains('hidden')) return;
+
+        const targetCoords = reg.coords;
+
+        if (!isSidebarOpen) {
+            // Primera apertura: guardar vista actual y hacer zoom+1
+            originalView = {
+                center: map.getCenter(),
+                zoom: map.getZoom()
+            };
+
+            const newZoom = Math.min(map.getZoom() + 1, map.getMaxZoom());
+
+            isAnimating = true;
+            map.flyTo(targetCoords, newZoom, {
+                duration: 1.2,
+                animate: true
+            });
+
+            // Abrir sidebar y cargar datos
+            loadRegion(key);
+
+            // Al terminar la animación, permitir nuevos movimientos
+            setTimeout(() => {
+                isAnimating = false;
+            }, 1300);
+        } else {
+            // Sidebar ya abierto: solo centrar, mantener zoom
+            isAnimating = true;
+            map.flyTo(targetCoords, map.getZoom(), {
+                duration: 0.6,
+                animate: true
+            });
+
+            // Actualizar contenido del sidebar
+            loadRegion(key);
+
+            setTimeout(() => {
+                isAnimating = false;
+            }, 700);
+        }
+    });
+});
+
+// --- FUNCIÓN PARA CARGAR REGIÓN Y ABRIR SIDEBAR ---
+function loadRegion(id) {
+    const reg = datos[id];
+    sideTitle.innerText = reg.t;
+    sideDesc.innerHTML = reg.d;
+    sideImg.style.backgroundImage = `url(${reg.img})`;
+    sideLink.href = `https://gothobbarpg.forumcommunity.net/?f=${id.replace('f','')}`;
+    sideButtonText.innerText = reg.esReino ? 'EXPLORAR CONTINENTE' : 'EXPLORAR REGIÓN';
+
+    if (!sidebar.classList.contains('open')) {
+        sidebar.classList.add('open');
+        isSidebarOpen = true;
+        updateMarkerVisibility(); // Forzar visibilidad de todos
+    }
+}
+
+// --- FUNCIÓN PARA CERRAR SIDEBAR (llamada desde el botón) ---
+function toggleSidebar() {
+    if (sidebar.classList.contains('open')) {
+        // Cerrar sidebar
+        sidebar.classList.remove('open');
+        isSidebarOpen = false;
+
+        // Restaurar visibilidad normal
+        updateMarkerVisibility();
+
+        // Si hay una vista original guardada, volver a ella
+        if (originalView) {
+            isAnimating = true;
+            map.flyTo(originalView.center, originalView.zoom, {
+                duration: 0.5,
+                animate: true
+            });
+
+            setTimeout(() => {
+                isAnimating = false;
+                originalView = null; // Olvidar la vista
+                updateMarkerVisibility();
+            }, 600);
+        }
+    } else {
+        // Esto no debería ocurrir porque el sidebar se abre solo desde loadRegion,
+        // pero por si acaso, lo dejamos.
+        sidebar.classList.add('open');
+        isSidebarOpen = true;
+        updateMarkerVisibility();
+    }
+}
+
+// --- BOTÓN RESET ---
+function resetMap() {
+    if (isAnimating) return;
+
+    isAnimating = true;
+
+    // Cerrar sidebar si está abierto
+    if (sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        isSidebarOpen = false;
+    }
+
+    // Olvidar vista original
+    originalView = null;
+
+    // Volver al centro y zoom mínimo
+    map.flyTo(initialCenter, dynamicMinZoom, {
+        duration: 1.0,
+        animate: true
+    });
+
+    setTimeout(() => {
+        isAnimating = false;
+        updateMarkerVisibility();
+    }, 1100);
+}
+
+// --- AJUSTE POR REDIMENSIONADO ---
+window.addEventListener('resize', () => {
+    dynamicMinZoom = calculateMinZoom();
+    map.setMinZoom(dynamicMinZoom);
+    if (!isAnimating) {
+        if (map.getZoom() < dynamicMinZoom) {
+            map.setZoom(dynamicMinZoom);
+        }
+    }
+    adjustTextScale();
+    updateMarkerVisibility();
+});
+
+// --- INICIALIZACIÓN ---
+setTimeout(() => {
+    map.invalidateSize();
+    adjustTextScale();
+    updateMarkerVisibility();
+}, 300);
+</script>
+</body>
+</html>
