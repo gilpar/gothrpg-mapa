@@ -406,34 +406,79 @@ const datos = {
 };
 
 // --- SISTEMA DE CLIMA (ver gothrpg/sistemas/pendiente_confirmar/clima.md) ---
-// Pool de climas elegibles por región. Viento Moderado ("tiempo estable") está en todas.
+// Pools estacionales de clima.md: cada región solo sortea entre los climas de la estación vigente.
 const poolClimas = {
-    "f9126567": ["Viento Moderado", "Ola de Frío", "Nevada", "Ventisca", "Lluvia"],           // El Norte
-    "f9126574": ["Viento Moderado", "Lluvia", "Granizo", "Tormenta Eléctrica", "Ola de Frío"], // Tierras de los Ríos
-    "f9126572": ["Viento Moderado", "Lluvia", "Viento Severo", "Tormenta Eléctrica"],           // Islas del Hierro
-    "f9126573": ["Viento Moderado", "Nevada", "Ventisca", "Granizo", "Viento Severo"],          // El Valle
-    "f9126575": ["Viento Moderado", "Lluvia", "Ola de Calor"],                                  // Tierras del Oeste
-    "f9126566": ["Viento Moderado", "Lluvia", "Ola de Calor"],                                  // Tierras de la Corona
-    "f9126577": ["Viento Moderado", "Tormenta Eléctrica", "Viento Severo", "Lluvia", "Tornado"], // Tierras de la Tormenta
-    "f9139145": ["Viento Moderado", "Ola de Calor", "Lluvia"],                                  // El Dominio
-    "f9139146": ["Viento Moderado", "Ola de Calor", "Tormenta de Arena"]                        // Dorne
+    "f9126567": {
+        "Invierno": ["Ola de Frío", "Nevada", "Ventisca"],
+        "Primavera": ["Cielo Despejado", "Ola de Frío", "Nevada", "Lluvia"],
+        "Otoño": ["Cielo Despejado", "Ola de Frío", "Nevada", "Lluvia"],
+        "Verano": ["Cielo Despejado", "Lluvia", "Ola de Frío"],
+    },
+    "f9126574": {
+        "Invierno": ["Ola de Frío", "Nevada", "Lluvia"],
+        "Primavera": ["Cielo Despejado", "Lluvia", "Granizo", "Ola de Frío"],
+        "Otoño": ["Cielo Despejado", "Lluvia", "Granizo", "Ola de Frío"],
+        "Verano": ["Cielo Despejado", "Lluvia", "Granizo", "Tormenta Eléctrica"],
+    },
+    "f9126572": {
+        "Invierno": ["Ola de Frío", "Lluvia", "Viento Severo"],
+        "Primavera": ["Cielo Despejado", "Lluvia", "Viento Severo", "Tormenta Eléctrica"],
+        "Otoño": ["Cielo Despejado", "Lluvia", "Viento Severo", "Tormenta Eléctrica"],
+        "Verano": ["Cielo Despejado", "Lluvia", "Viento Severo", "Tormenta Eléctrica"],
+    },
+    "f9126573": {
+        "Invierno": ["Nevada", "Ventisca", "Viento Severo"],
+        "Primavera": ["Cielo Despejado", "Granizo", "Viento Severo"],
+        "Otoño": ["Cielo Despejado", "Granizo", "Viento Severo"],
+        "Verano": ["Cielo Despejado", "Granizo", "Viento Severo"],
+    },
+    "f9126575": {
+        "Invierno": ["Ola de Frío", "Lluvia"],
+        "Primavera": ["Cielo Despejado", "Lluvia"],
+        "Otoño": ["Cielo Despejado", "Lluvia"],
+        "Verano": ["Cielo Despejado", "Ola de Calor", "Lluvia"],
+    },
+    "f9126566": {
+        "Invierno": ["Ola de Frío", "Lluvia"],
+        "Primavera": ["Cielo Despejado", "Lluvia"],
+        "Otoño": ["Cielo Despejado", "Lluvia"],
+        "Verano": ["Cielo Despejado", "Ola de Calor", "Lluvia"],
+    },
+    "f9126577": {
+        "Invierno": ["Lluvia", "Viento Severo", "Tormenta Eléctrica"],
+        "Primavera": ["Cielo Despejado", "Lluvia", "Viento Severo", "Tormenta Eléctrica"],
+        "Otoño": ["Cielo Despejado", "Lluvia", "Viento Severo", "Tormenta Eléctrica"],
+        "Verano": ["Tormenta Eléctrica", "Viento Severo", "Tornado"],
+    },
+    "f9139145": {
+        "Invierno": ["Cielo Despejado", "Lluvia"],
+        "Primavera": ["Cielo Despejado", "Lluvia", "Ola de Calor"],
+        "Otoño": ["Cielo Despejado", "Lluvia", "Ola de Calor"],
+        "Verano": ["Ola de Calor", "Lluvia"],
+    },
+    "f9139146": {
+        "Invierno": ["Cielo Despejado", "Ola de Calor", "Viento Severo"],
+        "Primavera": ["Cielo Despejado", "Ola de Calor", "Tormenta de Arena", "Viento Severo"],
+        "Otoño": ["Cielo Despejado", "Ola de Calor", "Tormenta de Arena", "Viento Severo"],
+        "Verano": ["Ola de Calor", "Tormenta de Arena", "Viento Severo"],
+    },
 };
 
 const climaInfo = {
     "Ola de Calor": {
         icon: "fa-temperature-sun", color: "#E8A33D", tempMin: 34, tempMax: 42,
         descripcion: "El sol cae a plomo sobre la tierra, y hasta el aire parece arder.",
-        efectos: ["−15% VEL", "Insolación: 5% VIT/turno tras 5 turnos propios"]
+        efectos: ["−15% VEL", "Insolación: daño indirecto No Catalogado del 5% de VIT actual/turno tras 5 turnos propios. Cesa al salir del combate, finalizar el clima u obtener inmunidad parcial o total"]
     },
     "Ola de Frío": {
         icon: "fa-temperature-snow", color: "#7FB3D5", tempMin: -10, tempMax: 0,
         descripcion: "El frío se cuela bajo la ropa y entumece los dedos.",
-        efectos: ["−15% VEL", "Hipotermia: 5% VIT/turno tras 5 turnos propios"]
+        efectos: ["−15% VEL", "Hipotermia: daño indirecto No Catalogado del 5% de VIT actual/turno tras 5 turnos propios. Cesa al salir del combate, finalizar el clima u obtener inmunidad parcial o total"]
     },
     "Lluvia": {
         icon: "fa-cloud-rain", color: "#8FA8C4", tempMin: 10, tempMax: 18,
         descripcion: "Una lluvia constante embarra el terreno y lo vuelve traicionero.",
-        efectos: ["−25% alcance de habilidades ≥3", "Riesgo de quedar Empapado"]
+        efectos: ["−25% alcance de habilidades ≥3", "Empapado tras una ronda completa sin refugio"]
     },
     "Nevada": {
         icon: "fa-snowflake", color: "#DCEAF5", tempMin: -14, tempMax: -3,
@@ -443,37 +488,37 @@ const climaInfo = {
     "Granizo": {
         icon: "fa-cloud-meatball", color: "#B0C4D4", tempMin: 4, tempMax: 12,
         descripcion: "Piedras de hielo caen sin previo aviso, hiriendo a quien no se cubra.",
-        efectos: ["5% VIT/turno desde el primer turno", "−25% alcance de habilidades ≥3"]
+        efectos: ["Daño indirecto No Catalogado: 5% de VIT actual/turno desde el primer turno", "−25% alcance de habilidades ≥3"]
     },
     "Tormenta de Arena": {
         icon: "fa-wind", color: "#C9A66B", tempMin: 35, tempMax: 45,
         descripcion: "El viento levanta la arena hasta convertirla en un muro que ciega y ahoga.",
-        efectos: ["−50% alcance de habilidades ≥3", "−30% VEL", "10% VIT/turno"]
+        efectos: ["−50% alcance de habilidades ≥3", "−30% VEL", "Daño indirecto No Catalogado: 10% de VIT actual/turno"]
     },
     "Ventisca": {
         icon: "fa-cloud-showers-heavy", color: "#A9C6E0", tempMin: -25, tempMax: -12,
         descripcion: "Viento y nieve combinados que pueden matar a un hombre desprevenido en horas.",
-        efectos: ["−50% VEL", "Aturdido 1 turno cada 3 turnos propios", "10% VIT/turno"]
+        efectos: ["−50% VEL", "Aturdido 1 turno cada 3 turnos propios", "Daño indirecto No Catalogado: 10% de VIT actual/turno"]
     },
     "Tormenta Eléctrica": {
         icon: "fa-bolt", color: "#E8D84D", tempMin: 16, tempMax: 24,
         descripcion: "El cielo se parte en relámpagos y el trueno ahoga cualquier orden gritada.",
-        efectos: ["−25% alcance de habilidades ≥3", "1d20=1: rayo, 20% VIT directo (−3 por pieza metálica)"]
+        efectos: ["−25% alcance de habilidades ≥3", "Al final de cada ronda: 1d20, −3 por arma o pieza de armadura metálica. Resultado ≤1: rayo, daño directo del 20% de VIT total"]
     },
-    "Viento Moderado": {
-        icon: "fa-wind", color: "#9AA5AE", tempMin: 14, tempMax: 22,
-        descripcion: "Una brisa constante, apenas un incordio salvo para el tiro más calculado.",
-        efectos: ["−10% alcance de habilidades ≥3"]
+    "Cielo Despejado": {
+        icon: "fa-sun-bright", color: "#E8D084", tempMin: 14, tempMax: 22,
+        descripcion: "El día transcurre sin inclemencias: sol, nubes altas o una brisa suave que no llega a molestar. El terreno está firme y la visibilidad es plena.",
+        efectos: ["Ninguno. Clima neutro: tiempo estable."]
     },
     "Viento Severo": {
         icon: "fa-wind", color: "#D97742", tempMin: 6, tempMax: 16,
         descripcion: "Rachas capaces de derribar a un jinete y arrancar cualquier objeto mal sujeto.",
-        efectos: ["−50% alcance de habilidades ≥3", "−30% VEL", "1d20<10: estado Desarmado"]
+        efectos: ["−50% alcance de habilidades ≥3", "−30% VEL", "Al final de cada ronda: 1d20 <10, estado Desarmado"]
     },
     "Tornado": {
         icon: "fa-tornado", color: "#C0392B", tempMin: 18, tempMax: 27,
         descripcion: "Un vórtice de viento que arranca tejados y hombres por igual.",
-        efectos: ["Sin habilidades de alcance ≥3", "−50% VEL", "10% VIT/turno", "1d20<8: estado Desarmado"]
+        efectos: ["Sin habilidades de alcance ≥3", "−50% VEL", "Daño indirecto No Catalogado: 10% de VIT actual/turno", "Al final de cada ronda: 1d20 <8, estado Desarmado"]
     }
 };
 
@@ -491,6 +536,16 @@ function climaIntensificadoPorEstacion(clima) {
     return false;
 }
 
+// HPE: todos los jugadores comparten el día peninsular, incluido el horario de verano.
+const relojClimaHPE = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', hourCycle: 'h23'
+});
+function fechaClimaHPE(fecha = new Date()) {
+    const partes = Object.fromEntries(relojClimaHPE.formatToParts(fecha).map(p => [p.type, p.value]));
+    return { dia: `${partes.year}-${partes.month}-${partes.day}`, hora: partes.hour };
+}
+
 // Hash determinista (djb2): misma fecha/hora + misma región = mismo resultado para todos los jugadores.
 function hashCadena(str) {
     let hash = 5381;
@@ -502,10 +557,9 @@ function hashCadena(str) {
 }
 
 function climaDelDia(regionKey) {
-    const pool = poolClimas[regionKey];
-    if (!pool) return null;
-    const hoy = new Date();
-    const fechaStr = `${hoy.getUTCFullYear()}-${hoy.getUTCMonth() + 1}-${hoy.getUTCDate()}`;
+    const pool = poolClimas[regionKey]?.[ESTACION_ACTUAL];
+    if (!pool || !pool.length) return null;
+    const fechaStr = fechaClimaHPE().dia;
     const indice = hashCadena(fechaStr + regionKey) % pool.length;
     return pool[indice];
 }
@@ -519,8 +573,8 @@ function rangoDiario(clima, meta) {
 
 // Temperatura "actual": cambia cada hora dentro del rango fijo del día.
 function temperaturaActual(regionKey, tempMin, tempMax) {
-    const hoy = new Date();
-    const fechaHoraStr = `${hoy.getUTCFullYear()}-${hoy.getUTCMonth() + 1}-${hoy.getUTCDate()}-${hoy.getUTCHours()}`;
+    const fecha = fechaClimaHPE();
+    const fechaHoraStr = `${fecha.dia}-${fecha.hora}`;
     const rango = tempMax - tempMin;
     const proporcion = hashCadena("temp-" + fechaHoraStr + regionKey) % 100 / 100;
     return Math.round(tempMin + rango * proporcion);
@@ -535,8 +589,24 @@ function iconHTML(meta) {
     return `<i class="fas" style="color:${meta.color}">${meta.icon}</i>`;
 }
 
+// Intensificar la magnitud, conservando los plazos, frecuencias y umbrales de activación.
+// Se parte siempre de los efectos base: reabrir el popup nunca acumula multiplicadores.
+function efectosClimaActual(clima, meta) {
+    if (!climaIntensificadoPorEstacion(clima)) return meta.efectos;
+    return meta.efectos.map(efecto => efecto
+        .replace(/(\d+)%/g, (_, valor) => `${Number(valor) * 2}%`)
+        .replace(/Aturdido (\d+) turnos?\b/g, (_, turnos) => `Aturdido ${Number(turnos) * 2} turnos`));
+}
+
+function etiquetaEstacionalHTML(clima) {
+    if (!climaIntensificadoPorEstacion(clima)) return '';
+    const metaEstacion = climaInfo[ESTACION_ACTUAL === 'Verano' ? 'Ola de Calor' : 'Ola de Frío'];
+    return `<span class="clima-popup-season">${iconHTML(metaEstacion)}Intensificado por ${ESTACION_ACTUAL}</span>`;
+}
+
 function climaPopupHTML(clima, meta, estacionTag, regionNombre) {
-    const efectosHTML = meta.efectos.map(e => `<li><span>${e}</span></li>`).join('');
+    const intensificado = climaIntensificadoPorEstacion(clima);
+    const efectosHTML = efectosClimaActual(clima, meta).map(e => `<li><span>${e}</span></li>`).join('');
     return `
         <div class="clima-popup-head">
             <div class="clima-popup-sigil">${iconHTML(meta)}</div>
@@ -548,7 +618,7 @@ function climaPopupHTML(clima, meta, estacionTag, regionNombre) {
         <div class="clima-popup-body">
             <p class="clima-popup-desc">${meta.descripcion}</p>
             ${estacionTag}
-            <div class="clima-popup-label">Efectos</div>
+            <div class="clima-popup-label">${intensificado ? "Efectos · ×2 aplicado" : "Efectos"}</div>
             <ul class="clima-popup-effects">${efectosHTML}</ul>
         </div>`;
 }
@@ -558,11 +628,8 @@ function climaBadgeHTML(regionKey) {
     const clima = climaDelDia(regionKey);
     if (!clima) return '';
     const meta = climaInfo[clima] || { icon: "fa-cloud", color: "#ffffff", tempMin: 0, tempMax: 0, descripcion: "", efectos: [] };
-    const { min, max, intensificado } = rangoDiario(clima, meta);
+    const { min, max } = rangoDiario(clima, meta);
     const tempActual = temperaturaActual(regionKey, min, max);
-    const estacionTag = intensificado
-        ? `<span class="clima-popup-season">Intensificado por ${ESTACION_ACTUAL}</span>`
-        : '';
     // Variante completa: temperatura actual + máx/mín + icono + nombre de región (zoom cercano, un solo reino a la vista).
     const cardFull = `
         <div class="clima-card clima-card-full" data-region-key="${regionKey}">
@@ -599,12 +666,20 @@ function climaBadgeHTML(regionKey) {
             <span class="clima-region-name">${region.t}</span>
         </div>`;
 
-    return `<div class="clima-variants">${cardFull}${cardSimple}${cardMinimal}</div>`;
+    return `<div class="clima-variants" data-dia="${fechaClimaHPE().dia}" data-estacion="${ESTACION_ACTUAL}">${cardFull}${cardSimple}${cardMinimal}</div>`;
 }
 
-// Refresca solo el número de temperatura actual de cada tarjeta ya pintada (cambia cada hora sin recargar la página).
+// Al cambiar el día, renovar también el icono, rango y clima; durante el día, solo la temperatura.
 function actualizarTemperaturasActuales() {
+    const dia = fechaClimaHPE().dia;
     Object.keys(poolClimas).forEach(regionKey => {
+        const card = document.querySelector(`.clima-card[data-region-key="${regionKey}"]`);
+        const variants = card?.closest('.clima-variants');
+        if (variants && (variants.dataset.dia !== dia || variants.dataset.estacion !== ESTACION_ACTUAL)) {
+            ocultarClimaPopup();
+            variants.parentElement.innerHTML = climaBadgeHTML(regionKey);
+            return;
+        }
         const clima = climaDelDia(regionKey);
         const meta = climaInfo[clima];
         if (!meta) return;
@@ -614,7 +689,22 @@ function actualizarTemperaturasActuales() {
             .forEach(el => { el.textContent = `${tempActual}°`; });
     });
 }
-setInterval(actualizarTemperaturasActuales, 60000);
+let climaRefreshTimer;
+function programarActualizacionClima() {
+    clearTimeout(climaRefreshTimer);
+    // Alinear con el minuto real incluye las 00:00 HPE sin depender de cuándo se abrió el mapa.
+    climaRefreshTimer = setTimeout(() => {
+        actualizarTemperaturasActuales();
+        programarActualizacionClima();
+    }, 60000 - Date.now() % 60000 + 20);
+}
+programarActualizacionClima();
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        actualizarTemperaturasActuales();
+        programarActualizacionClima();
+    }
+});
 
 let climaEnabled = false;
 let climaTransitionTimer;
@@ -677,10 +767,7 @@ function mostrarClimaPopup(iconWrap) {
     const clima = climaDelDia(regionKey);
     if (!clima) return;
     const meta = climaInfo[clima] || { icon: "fa-cloud", color: "#ffffff", tempMin: 0, tempMax: 0, descripcion: "", efectos: [] };
-    const { intensificado } = rangoDiario(clima, meta);
-    const estacionTag = intensificado
-        ? `<span class="clima-popup-season"><i class="fas fa-bolt"></i>Intensificado por ${ESTACION_ACTUAL}</span>`
-        : '';
+    const estacionTag = etiquetaEstacionalHTML(clima);
 
     climaPopupPortal.innerHTML = climaPopupHTML(clima, meta, estacionTag, datos[regionKey] && datos[regionKey].t);
     // Tintes derivados del color del clima, usados por la cabecera, la placa del icono y los rombos.
