@@ -528,7 +528,33 @@ const ESTACION_ACTUAL = "Verano";
 
 const climasFrios = ["Ola de Frío", "Nevada", "Ventisca"];
 const climasCalidos = ["Ola de Calor", "Tormenta de Arena"];
-const DESPLAZAMIENTO_ESTACIONAL = 8; // °C que se suma/resta cuando la Estación intensifica un Clima afín.
+// Temperatura ambiental por región y estación. El clima activo añade un ajuste
+// moderado sobre esta base, para que no rompa la geografía ni la estación.
+const temperaturasBase = {
+    "f9126567": { "Invierno": [-25, -10], "Primavera": [-5, 10], "Otoño": [-5, 10], "Verano": [8, 20] }, // El Norte
+    "f9126573": { "Invierno": [-20, -5], "Primavera": [-2, 10], "Otoño": [-2, 10], "Verano": [8, 18] },  // El Valle
+    "f9126572": { "Invierno": [-5, 5], "Primavera": [8, 15], "Otoño": [8, 15], "Verano": [12, 20] },     // Islas del Hierro
+    "f9126574": { "Invierno": [-5, 8], "Primavera": [10, 20], "Otoño": [10, 20], "Verano": [15, 25] },   // Tierras de los Ríos
+    "f9126575": { "Invierno": [0, 10], "Primavera": [12, 22], "Otoño": [12, 22], "Verano": [18, 28] },   // Tierras del Oeste
+    "f9126566": { "Invierno": [5, 15], "Primavera": [15, 25], "Otoño": [15, 25], "Verano": [25, 35] },  // Tierras de la Corona
+    "f9139145": { "Invierno": [8, 18], "Primavera": [18, 28], "Otoño": [18, 28], "Verano": [25, 35] },  // El Dominio
+    "f9126577": { "Invierno": [5, 15], "Primavera": [15, 25], "Otoño": [15, 25], "Verano": [20, 30] },  // Tierras de la Tormenta
+    "f9139146": { "Invierno": [15, 25], "Primavera": [25, 38], "Otoño": [25, 38], "Verano": [40, 50] }  // Dorne
+};
+
+// Desplazamiento térmico del clima respecto al promedio regional y estacional.
+const modificadoresTemperaturaClima = {
+    "Ola de Calor": 8, "Ola de Frío": -8, "Lluvia": -3, "Nevada": -7,
+    "Granizo": -5, "Tormenta de Arena": 8, "Ventisca": -10,
+    "Tormenta Eléctrica": -2, "Cielo Despejado": 0, "Viento Severo": -4,
+    "Tornado": -3
+};
+
+// Límites físicos de casos extremos. Dorne en verano nunca supera 50°,
+// incluso bajo una Ola de Calor o una Tormenta de Arena.
+const limitesTemperatura = {
+    "f9139146": { "Verano": { max: 50 } }
+};
 
 function climaIntensificadoPorEstacion(clima) {
     if (ESTACION_ACTUAL === "Invierno" && climasFrios.includes(clima)) return true;
@@ -564,11 +590,19 @@ function climaDelDia(regionKey) {
     return pool[indice];
 }
 
-// Máximo y mínimo del día: fijos hasta las 00:00 HPE siguientes, se pueden desplazar por la Estación vigente.
-function rangoDiario(clima, meta) {
-    const intensificado = climaIntensificadoPorEstacion(clima);
-    const desplazamiento = !intensificado ? 0 : (climasFrios.includes(clima) ? -DESPLAZAMIENTO_ESTACIONAL : DESPLAZAMIENTO_ESTACIONAL);
-    return { min: meta.tempMin + desplazamiento, max: meta.tempMax + desplazamiento, intensificado };
+// Máximo y mínimo del día: la tabla regional es el ancla y el clima la matiza.
+function rangoDiario(regionKey, clima) {
+    const base = temperaturasBase[regionKey]?.[ESTACION_ACTUAL];
+    if (!base) return { min: 0, max: 0, intensificado: false };
+    const ajuste = modificadoresTemperaturaClima[clima] ?? 0;
+    const limite = limitesTemperatura[regionKey]?.[ESTACION_ACTUAL] || {};
+    const min = limite.min === undefined ? base[0] + ajuste : Math.max(base[0] + ajuste, limite.min);
+    const max = limite.max === undefined ? base[1] + ajuste : Math.min(base[1] + ajuste, limite.max);
+    return {
+        min: Math.min(min, max),
+        max,
+        intensificado: climaIntensificadoPorEstacion(clima)
+    };
 }
 
 // Temperatura "actual": cambia cada hora dentro del rango fijo del día.
@@ -628,7 +662,7 @@ function climaBadgeHTML(regionKey) {
     const clima = climaDelDia(regionKey);
     if (!clima) return '';
     const meta = climaInfo[clima] || { icon: "fa-cloud", color: "#ffffff", tempMin: 0, tempMax: 0, descripcion: "", efectos: [] };
-    const { min, max } = rangoDiario(clima, meta);
+    const { min, max } = rangoDiario(regionKey, clima);
     const tempActual = temperaturaActual(regionKey, min, max);
     // Variante completa: temperatura actual + máx/mín + icono + nombre de región (zoom cercano, un solo reino a la vista).
     const cardFull = `
@@ -683,7 +717,7 @@ function actualizarTemperaturasActuales() {
         const clima = climaDelDia(regionKey);
         const meta = climaInfo[clima];
         if (!meta) return;
-        const { min, max } = rangoDiario(clima, meta);
+        const { min, max } = rangoDiario(regionKey, clima);
         const tempActual = temperaturaActual(regionKey, min, max);
         document.querySelectorAll(`.clima-card[data-region-key="${regionKey}"] .clima-temp-actual`)
             .forEach(el => { el.textContent = `${tempActual}°`; });
