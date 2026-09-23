@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="https://kit-pro.fontawesome.com/releases/v5.13.0/css/pro.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://kit-pro.fontawesome.com/releases/v6.5.1/css/pro.min.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap"/> 
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap"/> 
@@ -30,48 +31,93 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
             --title: #FFFFFF; --text: #D1D5DB; --f-deco: 'Thrones of Westeros', serif;
             --border1: rgba(160, 80, 80, 0.2); --bckg-op-black: rgba(5, 5, 5, 0.96);
             --f-body: 'Montserrat', sans-serif; --f-title: 'Cinzel', serif;
+            /* Curvas compartidas: una sola cadencia de animación en todo el mapa */
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in: cubic-bezier(0.4, 0, 1, 1);
+            --clima-fade-duration: 300ms;
+            --clima-variant-duration: 200ms;
+        }
+        /* Respetar a quien tenga reducido el movimiento en su sistema */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
         }
         .map-app { position: relative; width: 100%; height: 100vh; background: #050505; overflow: hidden; font-family: var(--f-body); }
         .leaflet-container { background: #050505 !important; }
         .map-background { z-index: 100 !important; opacity: 1 !important; }
         .leaflet-control-attribution { display: none !important; }
         .leaflet-control-zoom { display: none !important; }
-        .custom-zoom-controls { position: absolute; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
-        .zoom-button, .reset-control { width: 35px; height: 35px; background: rgb(19 19 19 / 50%); color: #fff; border-radius: 10px; cursor: pointer; font-weight: 300; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35); }
-        .zoom-button:hover, .reset-control:hover { color: var(--accent1); border-color: var(--accent1); background: rgba(30, 0, 0, 0.9); box-shadow: 0 0 25px var(--accent2), inset 0 0 10px rgba(211, 0, 0, 0.2); }
-        .zoom-button:active, .reset-control:active { background: rgba(50, 0, 0, 0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.8), inset 0 0 15px rgba(211, 0, 0, 0.3); }
-      /* Estado deshabilitado para los botones */
-.zoom-button.disabled {
-    opacity: 0.4;
-    pointer-events: none; /* Evita que se pueda hacer click */
-    filter: grayscale(1); /* Opcional: le quita el color para que se vea más 'muerto' */
-    cursor: not-allowed;
-}
-        .left-sidebar { position: absolute; top: 0; left: -450px; width: 400px; height: 100%; background: var(--bckg-op-black); backdrop-filter: blur(40px); z-index: 2000; transition: left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); border-right: 2px solid var(--border1); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.8); will-change: left; }
-        .left-sidebar.open { left: 0; }
+        /* Clúster de controles: un solo panel de cristal con los botones dentro, separados por hairlines. */
+        .custom-zoom-controls {
+            position: absolute; bottom: 30px; right: 30px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 2px;
+            padding: 5px;
+            border-radius: 15px;
+            background: rgba(12, 12, 14, 0.5);
+            backdrop-filter: blur(16px) saturate(1.3);
+            -webkit-backdrop-filter: blur(16px) saturate(1.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+        .zoom-button, .reset-control {
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 10px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s var(--ease-out);
+        }
+        .zoom-button:hover, .reset-control:hover { background: rgba(255, 255, 255, 0.09); color: #fff; }
+        .zoom-button:active, .reset-control:active { background: rgba(255, 255, 255, 0.14); transform: scale(0.92); }
+        /* Separador entre el par de zoom y el resto de acciones */
+        .control-divider { height: 1px; margin: 4px 7px; background: rgba(255, 255, 255, 0.1); }
+        /* Clima activo: acento rojo con relleno suave, sin resplandor */
+        .zoom-button#climaToggle.active { color: #FF6B6B; background: rgba(211, 0, 0, 0.18); }
+        .zoom-button#climaToggle.active:hover { background: rgba(211, 0, 0, 0.26); }
+        /* Estado deshabilitado para los botones */
+        .zoom-button.disabled {
+            opacity: 0.28;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+        /* Se anima con transform (GPU) en vez de `left`, que forzaba recálculo de layout en cada frame. */
+        .left-sidebar { position: absolute; top: 0; left: 0; width: 400px; height: 100%; background: var(--bckg-op-black); backdrop-filter: blur(40px); z-index: 2000; transform: translateX(-110%); transition: transform 0.55s var(--ease-out); border-right: 2px solid var(--border1); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.8); will-change: transform; }
+        .left-sidebar.open { transform: translateX(0); }
         .infoimg { width: 100%; height: 260px; background-size: cover !important; background-position: center !important; position: relative; border-bottom: 4px solid var(--accent1); }
         .infoimg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bckg-op-black), transparent 80%); }
         .sidebar-content { padding: 30px 25px; overflow-y: auto; flex-grow: 1; }
         .sidebar-header h2 { font-family: var(--f-title); color: var(--title); font-size: 26px; letter-spacing: 3px; border-left: 4px solid var(--accent1); padding-left: 15px; margin: 0 0 20px 0; }
         .infotext { font-size: 12px; line-height: 1.7; color: var(--text); background: #100f0f; padding: 15px; outline: 1px solid var(--border1); border: 10px solid #100f0f; margin-bottom: 20px; height: 171px; overflow: auto; text-align: justify; }
-        .ir-btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 55px; background: linear-gradient(135deg, var(--accent1), #8B0000); color: #fff !important; text-decoration: none !important; font-family: var(--f-title); font-weight: 700; font-size: 13px; letter-spacing: 2px; border-radius: 4px; transition: 0.4s; }
+        .ir-btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 55px; background: linear-gradient(135deg, var(--accent1), #8B0000); color: #fff !important; text-decoration: none !important; font-family: var(--f-title); font-weight: 700; font-size: 13px; letter-spacing: 2px; border-radius: 4px; transition: filter 0.3s ease, box-shadow 0.3s ease, transform 0.3s var(--ease-out); }
         .ir-btn:hover { filter: brightness(1.2); box-shadow: 0 0 30px var(--accent2); transform: translateY(-3px); }
-        .close-sidebar { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--accent1); cursor: pointer; border-radius: 50%; z-index: 10; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .close-sidebar { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--accent1); cursor: pointer; border-radius: 50%; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background-color 0.25s ease, transform 0.35s var(--ease-out); }
         .close-sidebar:hover { background: var(--accent1); transform: rotate(90deg); }
         .leaflet-marker-icon { pointer-events: none !important; background: transparent; }
         .westeros-marker, .marker-sigil {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 100%; height: 100%;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
-            transition: opacity 0.5s ease;
+            transition: opacity 0.35s var(--ease-out);
             pointer-events: auto;
         }
+        /* OJO: el drop-shadow NO puede estar en .marker-sigil. Cualquier ancestro con `filter` crea un
+           "backdrop root" y deja sin efecto el backdrop-filter de .clima-card (no tendría nada que
+           desenfocar). El nombre de región ya lleva su propio drop-shadow, así que no se pierde nada. */
+        .westeros-marker { filter: drop-shadow(0 0 10px rgba(0,0,0,0.8)); }
         .westeros-marker.hidden, .marker-sigil.hidden {
             opacity: 0 !important;
             pointer-events: none !important; 
         }
-        .region-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.125rem; font-weight: 100; margin-top: 15px; color: white; white-space: nowrap; background: transparent; padding: 2px 0; filter: drop-shadow(0px 0px 5px #000); transform-origin: center; transition: transform 0.1s ease-out, color 0.5s, letter-spacing 0.5s; display: inline-block; will-change: transform; }
-        .westeros-name { font-family: var(--f-deco); font-size: 1.5rem; color: white; white-space: nowrap; letter-spacing: 4px; text-transform: uppercase; margin-top: 10px; filter: drop-shadow(0px 0px 8px #000); text-shadow: 0 0 20px rgb(0 0 0 / 30%); transition: all 0.3s ease; transform-origin: center; display: inline-block; will-change: transform; }
+        /* Nombre y clima comparten anclaje para desvanecerse sin saltos de altura. */
+        .marker-sigil { display: grid; place-items: center; }
+        .marker-sigil > .region-name, .marker-sigil > .clima-collapse { grid-area: 1 / 1; }
+        .region-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.125rem; font-weight: 100; color: white; white-space: nowrap; background: transparent; padding: 2px 0; filter: drop-shadow(0px 0px 5px #000); transform-origin: center; transition: transform 0.18s var(--ease-out), color 0.5s, letter-spacing 0.5s, opacity var(--clima-fade-duration) ease; display: inline-block; will-change: transform; opacity: 1; }
+        .map-app.clima-visible .region-name { opacity: 0; pointer-events: none; }
+        .westeros-name { font-family: var(--f-deco); font-size: 1.5rem; color: white; white-space: nowrap; letter-spacing: 4px; text-transform: uppercase; margin-top: 10px; filter: drop-shadow(0px 0px 8px #000); text-shadow: 0 0 20px rgb(0 0 0 / 30%); transition: transform 0.18s var(--ease-out), text-shadow 0.3s ease, letter-spacing 0.3s ease, opacity 0.3s ease; transform-origin: center; display: inline-block; will-change: transform; }
         .westeros-marker:not(.hidden):hover .westeros-name { text-shadow: 0 0 30px rgb(0 0 0 / 50%); letter-spacing: 6px; }
         @font-face { font-family:"Thrones of Westeros"; src: url('https://static.tumblr.com/dr1ak2t/Wxuq86swy/gameofthrones-webfont.ttf') }
         .marker-sigil[data-region="norte"]:hover .region-name {letter-spacing: 0.02em}
@@ -83,6 +129,175 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
         .marker-sigil[data-region="dominio"]:hover .region-name {letter-spacing: 0.02em}
         .marker-sigil[data-region="tormenta"]:hover .region-name {letter-spacing: 0.02em}
         .marker-sigil[data-region="dorne"]:hover .region-name {letter-spacing: 0.02em}
+
+        /* --- Sistema de Clima (ver gothrpg/sistemas/pendiente_confirmar/clima.md) --- */
+        /* Sin recortes ni colapsos de layout durante el fade. La opacidad se anima
+           en cada tarjeta para mantener el desenfoque de su fondo. */
+        .clima-collapse, .clima-variants {
+            display: grid;
+            place-items: center;
+            pointer-events: none;
+        }
+
+        .clima-card {
+            grid-area: 1 / 1;
+            align-self: center;
+            justify-self: center;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            background: rgba(12, 12, 14, 0.45);
+            backdrop-filter: blur(14px) saturate(1.3);
+            -webkit-backdrop-filter: blur(14px) saturate(1.3);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+            transition: opacity var(--clima-variant-duration) ease, transform var(--clima-variant-duration) var(--ease-out), border-color 0.2s ease;
+        }
+        .clima-card:hover { border-color: rgba(255, 255, 255, 0.2); }
+
+        .clima-card-row { display: flex; align-items: center; gap: 16px; }
+
+        .clima-temp { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+        .clima-temp-actual { font-family: var(--f-title); font-size: 22px; font-weight: 700; color: var(--title); letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
+        .clima-temp-range { font-size: 10px; color: rgba(209, 213, 219, 0.55); margin-top: 4px; letter-spacing: 0.4px; font-variant-numeric: tabular-nums; }
+
+        .clima-icon-wrap { position: relative; font-size: 20px; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, 0.04); cursor: default; }
+
+        .clima-region-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px; color: rgba(209, 213, 219, 0.85); white-space: nowrap; }
+
+        /* Cruce rápido y simultáneo entre variantes, sin pausa. */
+        .clima-card-full, .clima-card-simple {
+            opacity: 0;
+            transform: scale(0.98);
+            pointer-events: none;
+        }
+        .clima-card-simple { gap: 5px; padding: 6px 12px; }
+        .clima-card-simple .clima-card-row { gap: 5px; width: 100%; justify-content: space-between; }
+        .clima-card-simple .clima-temp-actual { font-size: 15px; }
+        .clima-card-simple .clima-icon-wrap { width: 24px; height: 24px; font-size: 14px; }
+        .map-app.clima-visible:not(.clima-transitioning):not(.wide-view) .clima-card-full,
+        .map-app.clima-visible:not(.clima-transitioning).wide-view .clima-card-simple {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        /* El relevo nombre/clima tiene su propia cadencia, independiente del zoom. */
+        .map-app.clima-transitioning .clima-card,
+        .map-app.clima-revealing .clima-card {
+            transition-duration: var(--clima-fade-duration), var(--clima-fade-duration), 0.2s;
+        }
+        .map-app.clima-transitioning .region-name,
+        .map-app.clima-transitioning .clima-card {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .marker-sigil.hidden .clima-card { pointer-events: none !important; }
+
+        /* El popup se "teletransporta" fuera de #map al mostrarse (ver JS), como hijo directo de .map-app.
+           Así nunca compite en apilamiento con el degradado de #map:before ni con los tiles/paneo de Leaflet. */
+        #climaPopupPortal {
+            position: fixed;
+            width: 248px;
+            padding: 0;
+            border-radius: 12px;
+            --popup-surface: rgba(12, 12, 14, 0.55);
+            --popup-border: rgba(255, 255, 255, 0.13);
+            --popup-glass: blur(18px) saturate(1.35);
+            background: transparent;
+            border: 1px solid transparent;
+            /* La sombra rectangular oscurecía la punta por detrás del cristal. */
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, calc(-100% - 18px)) translateY(6px) scale(0.97);
+            transition: opacity 0.18s ease, transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1700;
+            text-align: left;
+            pointer-events: none;
+        }
+        #climaPopupPortal.visible { opacity: 1; visibility: visible; transform: translate(-50%, calc(-100% - 18px)) translateY(0) scale(1); }
+        /* Una silueta continua para el cuerpo y la punta de 8 px.
+           Las máscaras se ajustan a la altura real del contenido al abrir. */
+        #climaPopupPortal::before,
+        #climaPopupPortal::after {
+            content: '';
+            position: absolute;
+            inset: -1px -1px -9px;
+            z-index: -1;
+            pointer-events: none;
+            mask-size: 100% 100%;
+            mask-repeat: no-repeat;
+            -webkit-mask-size: 100% 100%;
+            -webkit-mask-repeat: no-repeat;
+        }
+        #climaPopupPortal::before {
+            background: var(--popup-surface);
+            backdrop-filter: var(--popup-glass);
+            -webkit-backdrop-filter: var(--popup-glass);
+            mask-image: var(--popup-shape);
+            -webkit-mask-image: var(--popup-shape);
+        }
+        #climaPopupPortal::after {
+            background: var(--popup-border);
+            mask-image: var(--popup-outline);
+            -webkit-mask-image: var(--popup-outline);
+        }
+
+        /* Cabecera: franja tintada con el color del clima + icono en placa */
+        .clima-popup-head {
+            display: flex; align-items: center; gap: 11px;
+            padding: 13px 16px;
+            background: linear-gradient(180deg, var(--clima-tint, rgba(255,255,255,0.06)), transparent);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 12px 12px 0 0;
+        }
+        .clima-popup-sigil {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; flex: none;
+            border-radius: 9px;
+            background: var(--clima-tint, rgba(255,255,255,0.08));
+            border: 1px solid var(--clima-edge, rgba(255,255,255,0.18));
+            font-size: 15px;
+        }
+        .clima-popup-titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .clima-popup-kicker { font-size: 8.5px; text-transform: uppercase; letter-spacing: 1.6px; color: rgba(209, 213, 219, 0.45); }
+        .clima-popup-name { font-family: var(--f-title); font-size: 13px; font-weight: 700; color: var(--title); letter-spacing: 1.1px; line-height: 1.2; }
+
+        .clima-popup-body { padding: 13px 16px 15px; }
+        .clima-popup-desc { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13.5px; line-height: 1.5; color: var(--text); margin: 0 0 12px 0; }
+        .clima-popup-season {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 9px; text-transform: uppercase; letter-spacing: 1.1px; font-weight: 600;
+            color: #F0B4B4;
+            background: rgba(211, 0, 0, 0.14);
+            border: 1px solid rgba(211, 0, 0, 0.4);
+            border-radius: 999px; padding: 3px 9px; margin: 0 0 12px 0;
+        }
+        .clima-popup-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 8.5px; text-transform: uppercase; letter-spacing: 1.6px;
+            color: rgba(209, 213, 219, 0.4); margin-bottom: 8px;
+        }
+        .clima-popup-label::after { content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.08); }
+        .clima-popup-effects { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+        .clima-popup-effects li {
+            display: flex; align-items: flex-start; gap: 8px;
+            font-size: 10.5px; line-height: 1.5; color: rgba(226, 232, 240, 0.92);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 6px 9px;
+        }
+        .clima-popup-effects li::before {
+            content: '◆';
+            flex: none;
+            font-size: 7px;
+            line-height: 1.9;
+            color: var(--clima-color, rgba(255,255,255,0.5));
+        }
     </style>
 </head>
 <body>
@@ -103,10 +318,13 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
     </aside>
 
     <div id="map" style="width: 100%; height: 100%;"></div>
-    
+    <div id="climaPopupPortal"></div>
+
     <div class="custom-zoom-controls">
-        <div class="zoom-button" onclick="map.zoomIn()" title="Acercar"><i class="fas fa-plus"></i></div>
-        <div class="zoom-button" onclick="map.zoomOut()" title="Alejar"><i class="fas fa-minus"></i></div>
+        <div class="zoom-button" onclick="changeZoom(1)" title="Acercar"><i class="fas fa-plus"></i></div>
+        <div class="zoom-button" onclick="changeZoom(-1)" title="Alejar"><i class="fas fa-minus"></i></div>
+        <div class="control-divider"></div>
+        <div class="zoom-button" id="climaToggle" onclick="toggleClima()" title="Temperatura"><i class="fas fa-cloud-sun"></i></div>
         <div class="reset-control" onclick="resetMap()" title="Vista inicial"><i class="fas fa-compass"></i></div>
     </div>
 </div>
@@ -136,6 +354,304 @@ const datos = {
     
     "f9139146": { t: "Dorne", d: "<b>Dorne</b> es la región más meridional y árida de Poniente, con un clima desértico, montañas escarpadas y una cultura única moldeada por la influencia de los <b>Rhoynar</b>. Gobernados por la <b>Casa Nymeros Martell</b> desde <b>Lanza del Sol</b>, su lema <i>Nunca Doblegado, Nunca Roto</i> refleja que jamás fueron conquistados, ni siquiera por los <b>Targaryen</b>, sino que se unieron al reino mediante alianza y matrimonio siglos después. Destacan por practicar la igualdad de primogenitura, permitiendo gobernar a las mujeres, y por su resistencia feroz, sus vinos ácidos y costumbres que los diferencian notablemente del resto de los Siete Reinos.", img: "https://i.imgur.com/SPzMyta.jpeg", regionClass: "dorne", coords: [600, 900], esReino: false }
 };
+
+// --- SISTEMA DE CLIMA (ver gothrpg/sistemas/pendiente_confirmar/clima.md) ---
+// Pool de climas elegibles por región. Viento Moderado ("tiempo estable") está en todas.
+const poolClimas = {
+    "f9126567": ["Viento Moderado", "Ola de Frío", "Nevada", "Ventisca", "Lluvia"],           // El Norte
+    "f9126574": ["Viento Moderado", "Lluvia", "Granizo", "Tormenta Eléctrica", "Ola de Frío"], // Tierras de los Ríos
+    "f9126572": ["Viento Moderado", "Lluvia", "Viento Severo", "Tormenta Eléctrica"],           // Islas del Hierro
+    "f9126573": ["Viento Moderado", "Nevada", "Ventisca", "Granizo", "Viento Severo"],          // El Valle
+    "f9126575": ["Viento Moderado", "Lluvia", "Ola de Calor"],                                  // Tierras del Oeste
+    "f9126566": ["Viento Moderado", "Lluvia", "Ola de Calor"],                                  // Tierras de la Corona
+    "f9126577": ["Viento Moderado", "Tormenta Eléctrica", "Viento Severo", "Lluvia", "Tornado"], // Tierras de la Tormenta
+    "f9139145": ["Viento Moderado", "Ola de Calor", "Lluvia"],                                  // El Dominio
+    "f9139146": ["Viento Moderado", "Ola de Calor", "Tormenta de Arena"]                        // Dorne
+};
+
+const climaInfo = {
+    "Ola de Calor": {
+        icon: "fa-temperature-sun", color: "#E8A33D", tempMin: 34, tempMax: 42,
+        descripcion: "El sol cae a plomo sobre la tierra, y hasta el aire parece arder.",
+        efectos: ["−15% VEL", "Insolación: 5% VIT/turno tras 5 turnos propios"]
+    },
+    "Ola de Frío": {
+        icon: "fa-temperature-snow", color: "#7FB3D5", tempMin: -10, tempMax: 0,
+        descripcion: "El frío se cuela bajo la ropa y entumece los dedos.",
+        efectos: ["−15% VEL", "Hipotermia: 5% VIT/turno tras 5 turnos propios"]
+    },
+    "Lluvia": {
+        icon: "fa-cloud-rain", color: "#8FA8C4", tempMin: 10, tempMax: 18,
+        descripcion: "Una lluvia constante embarra el terreno y lo vuelve traicionero.",
+        efectos: ["−25% alcance de habilidades ≥3", "Riesgo de quedar Empapado"]
+    },
+    "Nevada": {
+        icon: "fa-snowflake", color: "#DCEAF5", tempMin: -14, tempMax: -3,
+        descripcion: "La nieve cae espesa y silenciosa, ahogando cualquier sonido.",
+        efectos: ["−30% VEL", "Aturdido 1 turno cada 5 turnos propios"]
+    },
+    "Granizo": {
+        icon: "fa-cloud-meatball", color: "#B0C4D4", tempMin: 4, tempMax: 12,
+        descripcion: "Piedras de hielo caen sin previo aviso, hiriendo a quien no se cubra.",
+        efectos: ["5% VIT/turno desde el primer turno", "−25% alcance de habilidades ≥3"]
+    },
+    "Tormenta de Arena": {
+        icon: "fa-wind", color: "#C9A66B", tempMin: 35, tempMax: 45,
+        descripcion: "El viento levanta la arena hasta convertirla en un muro que ciega y ahoga.",
+        efectos: ["−50% alcance de habilidades ≥3", "−30% VEL", "10% VIT/turno"]
+    },
+    "Ventisca": {
+        icon: "fa-cloud-showers-heavy", color: "#A9C6E0", tempMin: -25, tempMax: -12,
+        descripcion: "Viento y nieve combinados que pueden matar a un hombre desprevenido en horas.",
+        efectos: ["−50% VEL", "Aturdido 1 turno cada 3 turnos propios", "10% VIT/turno"]
+    },
+    "Tormenta Eléctrica": {
+        icon: "fa-bolt", color: "#E8D84D", tempMin: 16, tempMax: 24,
+        descripcion: "El cielo se parte en relámpagos y el trueno ahoga cualquier orden gritada.",
+        efectos: ["−25% alcance de habilidades ≥3", "1d20=1: rayo, 20% VIT directo (−3 por pieza metálica)"]
+    },
+    "Viento Moderado": {
+        icon: "fa-wind", color: "#9AA5AE", tempMin: 14, tempMax: 22,
+        descripcion: "Una brisa constante, apenas un incordio salvo para el tiro más calculado.",
+        efectos: ["−10% alcance de habilidades ≥3"]
+    },
+    "Viento Severo": {
+        icon: "fa-wind", color: "#D97742", tempMin: 6, tempMax: 16,
+        descripcion: "Rachas capaces de derribar a un jinete y arrancar cualquier objeto mal sujeto.",
+        efectos: ["−50% alcance de habilidades ≥3", "−30% VEL", "1d20<10: estado Desarmado"]
+    },
+    "Tornado": {
+        icon: "fa-tornado", color: "#C0392B", tempMin: 18, tempMax: 27,
+        descripcion: "Un vórtice de viento que arranca tejados y hombres por igual.",
+        efectos: ["Sin habilidades de alcance ≥3", "−50% VEL", "10% VIT/turno", "1d20<8: estado Desarmado"]
+    }
+};
+
+// Estación vigente en Poniente (ver Sistema de Transcurso del Tiempo On-Rol y "Efectos Estacionales" de clima.md).
+// Cambia solo este valor ("Primavera" | "Verano" | "Otoño" | "Invierno") para que afecte a todo el sistema.
+const ESTACION_ACTUAL = "Verano";
+
+const climasFrios = ["Ola de Frío", "Nevada", "Ventisca"];
+const climasCalidos = ["Ola de Calor", "Tormenta de Arena"];
+const DESPLAZAMIENTO_ESTACIONAL = 8; // °C que se suma/resta cuando la Estación intensifica un Clima afín.
+
+function climaIntensificadoPorEstacion(clima) {
+    if (ESTACION_ACTUAL === "Invierno" && climasFrios.includes(clima)) return true;
+    if (ESTACION_ACTUAL === "Verano" && climasCalidos.includes(clima)) return true;
+    return false;
+}
+
+// Hash determinista (djb2): misma fecha/hora + misma región = mismo resultado para todos los jugadores.
+function hashCadena(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        hash = hash & hash; // 32 bits
+    }
+    return Math.abs(hash);
+}
+
+function climaDelDia(regionKey) {
+    const pool = poolClimas[regionKey];
+    if (!pool) return null;
+    const hoy = new Date();
+    const fechaStr = `${hoy.getUTCFullYear()}-${hoy.getUTCMonth() + 1}-${hoy.getUTCDate()}`;
+    const indice = hashCadena(fechaStr + regionKey) % pool.length;
+    return pool[indice];
+}
+
+// Máximo y mínimo del día: fijos hasta las 00:00 HPE siguientes, se pueden desplazar por la Estación vigente.
+function rangoDiario(clima, meta) {
+    const intensificado = climaIntensificadoPorEstacion(clima);
+    const desplazamiento = !intensificado ? 0 : (climasFrios.includes(clima) ? -DESPLAZAMIENTO_ESTACIONAL : DESPLAZAMIENTO_ESTACIONAL);
+    return { min: meta.tempMin + desplazamiento, max: meta.tempMax + desplazamiento, intensificado };
+}
+
+// Temperatura "actual": cambia cada hora dentro del rango fijo del día.
+function temperaturaActual(regionKey, tempMin, tempMax) {
+    const hoy = new Date();
+    const fechaHoraStr = `${hoy.getUTCFullYear()}-${hoy.getUTCMonth() + 1}-${hoy.getUTCDate()}-${hoy.getUTCHours()}`;
+    const rango = tempMax - tempMin;
+    const proporcion = hashCadena("temp-" + fechaHoraStr + regionKey) % 100 / 100;
+    return Math.round(tempMin + rango * proporcion);
+}
+
+// meta.icon puede ser un nombre de clase Font Awesome ("fa-sun") o un carácter literal del glifo
+// (para iconos referenciados por su código exacto, ej. Ola de Calor/Ola de Frío).
+function iconHTML(meta) {
+    if (meta.icon && meta.icon.startsWith('fa-')) {
+        return `<i class="fas ${meta.icon}" style="color:${meta.color}"></i>`;
+    }
+    return `<i class="fas" style="color:${meta.color}">${meta.icon}</i>`;
+}
+
+function climaPopupHTML(clima, meta, estacionTag, regionNombre) {
+    const efectosHTML = meta.efectos.map(e => `<li><span>${e}</span></li>`).join('');
+    return `
+        <div class="clima-popup-head">
+            <div class="clima-popup-sigil">${iconHTML(meta)}</div>
+            <div class="clima-popup-titles">
+                <span class="clima-popup-kicker">${regionNombre || 'Clima actual'}</span>
+                <span class="clima-popup-name">${clima}</span>
+            </div>
+        </div>
+        <div class="clima-popup-body">
+            <p class="clima-popup-desc">${meta.descripcion}</p>
+            ${estacionTag}
+            <div class="clima-popup-label">Efectos</div>
+            <ul class="clima-popup-effects">${efectosHTML}</ul>
+        </div>`;
+}
+
+function climaBadgeHTML(regionKey) {
+    const region = datos[regionKey];
+    const clima = climaDelDia(regionKey);
+    if (!clima) return '';
+    const meta = climaInfo[clima] || { icon: "fa-cloud", color: "#ffffff", tempMin: 0, tempMax: 0, descripcion: "", efectos: [] };
+    const { min, max, intensificado } = rangoDiario(clima, meta);
+    const tempActual = temperaturaActual(regionKey, min, max);
+    const estacionTag = intensificado
+        ? `<span class="clima-popup-season">Intensificado por ${ESTACION_ACTUAL}</span>`
+        : '';
+    // Variante completa: temperatura actual + máx/mín + icono + nombre de región (zoom cercano, un solo reino a la vista).
+    const cardFull = `
+        <div class="clima-card clima-card-full" data-region-key="${regionKey}">
+            <div class="clima-card-row">
+                <div class="clima-temp">
+                    <span class="clima-temp-actual">${tempActual}°</span>
+                    <span class="clima-temp-range">${max}° / ${min}°</span>
+                </div>
+                <div class="clima-icon-wrap" role="img" aria-label="Clima: ${clima}" data-region-key="${regionKey}">
+                    ${iconHTML(meta)}
+                </div>
+            </div>
+            <span class="clima-region-name">${region.t}</span>
+        </div>`;
+
+    // Variante simple: temperatura actual + icono + nombre de región, sin máx/mín (zoom amplio, todo Poniente a la vista).
+    const cardSimple = `
+        <div class="clima-card clima-card-simple" data-region-key="${regionKey}">
+            <div class="clima-card-row">
+                <span class="clima-temp-actual">${tempActual}°</span>
+                <div class="clima-icon-wrap" role="img" aria-label="Clima: ${clima}" data-region-key="${regionKey}">
+                    ${iconHTML(meta)}
+                </div>
+            </div>
+            <span class="clima-region-name">${region.t}</span>
+        </div>`;
+
+    return `<div class="clima-variants">${cardFull}${cardSimple}</div>`;
+}
+
+// Refresca solo el número de temperatura actual de cada tarjeta ya pintada (cambia cada hora sin recargar la página).
+function actualizarTemperaturasActuales() {
+    Object.keys(poolClimas).forEach(regionKey => {
+        const clima = climaDelDia(regionKey);
+        const meta = climaInfo[clima];
+        if (!meta) return;
+        const { min, max } = rangoDiario(clima, meta);
+        const tempActual = temperaturaActual(regionKey, min, max);
+        document.querySelectorAll(`.clima-card[data-region-key="${regionKey}"] .clima-temp-actual`)
+            .forEach(el => { el.textContent = `${tempActual}°`; });
+    });
+}
+setInterval(actualizarTemperaturasActuales, 60000);
+
+let climaEnabled = false;
+let climaTransitionTimer;
+let climaRevealTimer;
+
+function toggleClima() {
+    const app = document.querySelector('.map-app');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const fadeDuration = reducedMotion ? 0 : parseFloat(
+        getComputedStyle(app).getPropertyValue('--clima-fade-duration')
+    );
+    climaEnabled = !climaEnabled;
+    document.getElementById('climaToggle').classList.toggle('active', climaEnabled);
+    ocultarClimaPopup();
+
+    // Una pulsación nueva cancela cualquier relevo pendiente.
+    clearTimeout(climaTransitionTimer);
+    clearTimeout(climaRevealTimer);
+    app.classList.remove('clima-revealing');
+    app.classList.add('clima-transitioning');
+
+    // Fade out, 100 ms completamente oculto y fade in del estado solicitado.
+    climaTransitionTimer = setTimeout(() => {
+        app.classList.toggle('clima-visible', climaEnabled);
+        app.classList.add('clima-revealing');
+        app.classList.remove('clima-transitioning');
+        climaRevealTimer = setTimeout(() => {
+            app.classList.remove('clima-revealing');
+        }, fadeDuration);
+    }, fadeDuration + 100);
+}
+
+// --- POPUP DE CLIMA "TELETRANSPORTADO" (fuera de #map, para no competir con #map:before ni los tiles) ---
+const climaPopupPortal = document.getElementById('climaPopupPortal');
+
+// El relleno y el borde usan exactamente el mismo trazado, sin costuras ni rombos solapados.
+function ajustarSiluetaClimaPopup() {
+    const width = climaPopupPortal.offsetWidth;
+    const height = climaPopupPortal.offsetHeight;
+    const center = width / 2;
+    const right = width - 0.5;
+    const bottom = height - 0.5;
+    const radius = 12;
+    const path = `M ${radius} 0.5 H ${width - radius}
+        Q ${right} 0.5 ${right} ${radius} V ${height - radius}
+        Q ${right} ${bottom} ${width - radius} ${bottom}
+        H ${center + 8} L ${center} ${bottom + 8} L ${center - 8} ${bottom}
+        H ${radius} Q 0.5 ${bottom} 0.5 ${height - radius}
+        V ${radius} Q 0.5 0.5 ${radius} 0.5 Z`;
+    const mask = (attributes) => {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height + 8}" viewBox="0 0 ${width} ${height + 8}"><path d="${path}" ${attributes}/></svg>`;
+        return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+    };
+    climaPopupPortal.style.setProperty('--popup-shape', mask('fill="white"'));
+    climaPopupPortal.style.setProperty('--popup-outline', mask('fill="none" stroke="white" stroke-width="1" stroke-linejoin="round"'));
+}
+
+function mostrarClimaPopup(iconWrap) {
+    const regionKey = iconWrap.dataset.regionKey;
+    const clima = climaDelDia(regionKey);
+    if (!clima) return;
+    const meta = climaInfo[clima] || { icon: "fa-cloud", color: "#ffffff", tempMin: 0, tempMax: 0, descripcion: "", efectos: [] };
+    const { intensificado } = rangoDiario(clima, meta);
+    const estacionTag = intensificado
+        ? `<span class="clima-popup-season"><i class="fas fa-bolt"></i>Intensificado por ${ESTACION_ACTUAL}</span>`
+        : '';
+
+    climaPopupPortal.innerHTML = climaPopupHTML(clima, meta, estacionTag, datos[regionKey] && datos[regionKey].t);
+    // Tintes derivados del color del clima, usados por la cabecera, la placa del icono y los rombos.
+    climaPopupPortal.style.setProperty('--clima-color', meta.color);
+    climaPopupPortal.style.setProperty('--clima-tint', `${meta.color}1f`);
+    climaPopupPortal.style.setProperty('--clima-edge', `${meta.color}59`);
+
+    ajustarSiluetaClimaPopup();
+
+    const rect = iconWrap.getBoundingClientRect();
+    // 18 px de desplazamiento: 8 px de punta y 10 px libres sobre la tarjeta.
+    const cardRect = (iconWrap.closest(".clima-card") || iconWrap).getBoundingClientRect();
+    climaPopupPortal.style.left = `${rect.left + rect.width / 2}px`;
+    climaPopupPortal.style.top = `${cardRect.top}px`;
+    climaPopupPortal.classList.add('visible');
+}
+
+function ocultarClimaPopup() {
+    climaPopupPortal.classList.remove('visible');
+}
+
+document.addEventListener('mouseover', (e) => {
+    const iconWrap = e.target.closest('.clima-icon-wrap');
+    if (iconWrap) mostrarClimaPopup(iconWrap);
+});
+document.addEventListener('mouseout', (e) => {
+    const iconWrap = e.target.closest('.clima-icon-wrap');
+    if (iconWrap && !iconWrap.contains(e.relatedTarget)) ocultarClimaPopup();
+});
+
 // --- CONFIGURACIÓN DEL MAPA (CRS Simple) ---
 const w = 3956;  // ancho de la imagen
 const h = 2577;  // alto de la imagen
@@ -151,8 +667,36 @@ const map = L.map('map', {
     maxZoom: 1,
     minZoom: -2,
     maxBounds: cameraBounds, // <--- USAMOS LOS LÍMITES EXTENDIDOS
-    maxBoundsViscosity: 1.0
+    maxBoundsViscosity: 1.0,
+    // Botones y rueda comparten pasos de medio nivel y el centro del mapa.
+    zoomSnap: 0,
+    zoomDelta: 0.5,
+    scrollWheelZoom: false,
+    zoomAnimation: true,
+    markerZoomAnimation: true,
+    inertia: true,
+    inertiaDeceleration: 2600
 });
+
+// Una única ruta de zoom: mismo incremento, límites, centro y animación.
+function changeZoom(direction) {
+    if (direction > 0) map.zoomIn();
+    else map.zoomOut();
+}
+
+let lastWheelZoom = -Infinity;
+map.getContainer().addEventListener('wheel', (event) => {
+    if (event.deltaY === 0) return;
+    event.preventDefault();
+    // Agrupa las ráfagas de la rueda/trackpad sin acumular zoom tras soltarla.
+    const now = performance.now();
+    if (now - lastWheelZoom < 200) return;
+    lastWheelZoom = now;
+    changeZoom(event.deltaY < 0 ? 1 : -1);
+}, { passive: false });
+
+// Si se hace zoom/pan mientras el popup de clima está abierto, mejor ocultarlo (la posición fija quedaría desfasada).
+map.on('zoomstart movestart', ocultarClimaPopup);
 
 L.imageOverlay('https://i.imgur.com/QloRqbD.jpeg', bounds, {
     opacity: 1,
@@ -187,6 +731,8 @@ const sideButtonText = document.getElementById('sideButtonText');
 // --- FUNCIÓN PARA ACTUALIZAR VISIBILIDAD DE MARCADORES ---
 function updateMarkerVisibility() {
     const zoom = map.getZoom();
+    // Mismo umbral que usa Poniente: a este zoom, Poniente y todos los nombres de región conviven en pantalla.
+    document.querySelector('.map-app').classList.toggle('wide-view', zoom <= -0.2);
     Object.keys(markers).forEach(key => {
         const marker = markers[key];
         if (!marker || !marker._icon) return;
@@ -285,10 +831,11 @@ Object.keys(datos).forEach(key => {
         isHidden = currentZoom < -1.5;
         html = `
             <div class="marker-sigil ${isHidden ? 'hidden' : ''}" data-region="${reg.regionClass}">
+                <div class="clima-collapse">${climaBadgeHTML(key)}</div>
                 <span class="region-name">${reg.t}</span>
             </div>`;
-        iconSize = [120, 50];
-        iconAnchor = [60, 40];
+        iconSize = [190, 130];
+        iconAnchor = [95, 30];
     }
 
     const marker = L.marker(reg.coords, {
@@ -314,7 +861,8 @@ Object.keys(datos).forEach(key => {
 
             isAnimating = true;
             map.flyTo(targetCoords, newZoom, {
-                duration: 1.2,
+                duration: 1.1,
+                easeLinearity: 0.18,
                 animate: true
             });
 
@@ -329,7 +877,8 @@ Object.keys(datos).forEach(key => {
             // Sidebar ya abierto: solo centrar, mantener zoom
             isAnimating = true;
             map.flyTo(targetCoords, map.getZoom(), {
-                duration: 0.6,
+                duration: 0.65,
+                easeLinearity: 0.18,
                 animate: true
             });
 
@@ -373,7 +922,8 @@ function toggleSidebar() {
         if (originalView) {
             isAnimating = true;
             map.flyTo(originalView.center, originalView.zoom, {
-                duration: 0.5,
+                duration: 0.6,
+                easeLinearity: 0.18,
                 animate: true
             });
 
@@ -410,6 +960,7 @@ function resetMap() {
     // Volver al centro y zoom mínimo
     map.flyTo(initialCenter, dynamicMinZoom, {
         duration: 1.0,
+        easeLinearity: 0.18,
         animate: true
     });
 
