@@ -42,6 +42,7 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
             *, *::before, *::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
+                transition-delay: 0s !important;
                 scroll-behavior: auto !important;
             }
         }
@@ -74,6 +75,32 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
         }
         .zoom-button:hover, .reset-control:hover { background: rgba(255, 255, 255, 0.09); color: #fff; }
         .zoom-button:active, .reset-control:active { background: rgba(255, 255, 255, 0.14); transform: scale(0.92); }
+        .fullscreen-toggle {
+            position: absolute; top: 30px; right: 30px; z-index: 2100;
+            width: 52px; height: 52px; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 15px;
+            background: rgba(12, 12, 14, 0.5);
+            backdrop-filter: blur(16px) saturate(1.3);
+            -webkit-backdrop-filter: blur(16px) saturate(1.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.72); font-size: 16px; cursor: pointer;
+            transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s var(--ease-out);
+        }
+        .fullscreen-toggle:hover { background: rgba(35, 35, 39, 0.85); color: #fff; }
+        .fullscreen-toggle:active { transform: scale(0.92); }
+        .fullscreen-toggle:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+        .fullscreen-toggle:disabled { cursor: wait; opacity: 0.5; }
+        .map-app:fullscreen { width: 100%; height: 100%; }
+        .map-app::backdrop { background: #050505; }
+        .fullscreen-status {
+            position: absolute; top: 94px; right: 30px; z-index: 2100;
+            max-width: min(280px, calc(100% - 80px)); padding: 12px 14px;
+            border-radius: 10px; border: 1px solid var(--border1);
+            background: rgba(12, 12, 14, 0.96); color: var(--text);
+            font-size: 12px; line-height: 1.5;
+        }
         /* Separador entre el par de zoom y el resto de acciones */
         .control-divider { height: 1px; margin: 4px 7px; background: rgba(255, 255, 255, 0.1); }
         /* Clima activo: acento rojo con relleno suave, sin resplandor */
@@ -101,7 +128,14 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
         .westeros-marker, .marker-sigil {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 100%; height: 100%;
-            transition: opacity 0.35s var(--ease-out);
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+            transform-origin: center;
+            /* Misma cadencia y escala que las tarjetas; reversible durante el zoom. */
+            transition: opacity var(--clima-fade-duration) ease,
+                        transform var(--clima-fade-duration) var(--ease-out),
+                        visibility 0s linear;
             pointer-events: auto;
         }
         /* OJO: el drop-shadow NO puede estar en .marker-sigil. Cualquier ancestro con `filter` crea un
@@ -110,14 +144,20 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
         .westeros-marker { filter: drop-shadow(0 0 10px rgba(0,0,0,0.8)); }
         .westeros-marker.hidden, .marker-sigil.hidden {
             opacity: 0 !important;
-            pointer-events: none !important; 
+            transform: scale(0.98);
+            visibility: hidden;
+            /* Ocultar al terminar el fade; al reaparecer, visibility vuelve sin retraso. */
+            transition-delay: 0s, 0s, var(--clima-fade-duration);
+            pointer-events: none !important;
         }
         /* Nombre y clima comparten anclaje para desvanecerse sin saltos de altura. */
         .marker-sigil { display: grid; place-items: center; }
         .marker-sigil > .region-name, .marker-sigil > .clima-collapse { grid-area: 1 / 1; }
-        .region-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.125rem; font-weight: 100; color: white; white-space: nowrap; background: transparent; padding: 2px 0; filter: drop-shadow(0px 0px 5px #000); transform-origin: center; transition: transform 0.18s var(--ease-out), color 0.5s, letter-spacing 0.5s, opacity var(--clima-fade-duration) ease; display: inline-block; will-change: transform; opacity: 1; }
+        /* Escala inicial del zoom mínimo: evita animar de 1 a 0.97 al arrancar. */
+        .region-name, .westeros-name { transform: scale(0.97); }
+        .region-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.125rem; font-weight: 100; color: white; white-space: nowrap; background: transparent; padding: 2px 0; filter: drop-shadow(0px 0px 5px #000); transform-origin: center; transition: transform var(--clima-variant-duration) var(--ease-out), color var(--clima-fade-duration) ease, letter-spacing var(--clima-fade-duration) ease, opacity var(--clima-fade-duration) ease; display: inline-block; will-change: transform; opacity: 1; }
         .map-app.clima-visible .region-name { opacity: 0; pointer-events: none; }
-        .westeros-name { font-family: var(--f-deco); font-size: 1.5rem; color: white; white-space: nowrap; letter-spacing: 4px; text-transform: uppercase; margin-top: 10px; filter: drop-shadow(0px 0px 8px #000); text-shadow: 0 0 20px rgb(0 0 0 / 30%); transition: transform 0.18s var(--ease-out), text-shadow 0.3s ease, letter-spacing 0.3s ease, opacity 0.3s ease; transform-origin: center; display: inline-block; will-change: transform; }
+        .westeros-name { font-family: var(--f-deco); font-size: 1.5rem; color: white; white-space: nowrap; letter-spacing: 4px; text-transform: uppercase; margin-top: 10px; filter: drop-shadow(0px 0px 8px #000); text-shadow: 0 0 20px rgb(0 0 0 / 30%); transition: transform var(--clima-variant-duration) var(--ease-out), text-shadow var(--clima-fade-duration) ease, letter-spacing var(--clima-fade-duration) ease, opacity var(--clima-fade-duration) ease; transform-origin: center; display: inline-block; will-change: transform; }
         .westeros-marker:not(.hidden):hover .westeros-name { text-shadow: 0 0 30px rgb(0 0 0 / 50%); letter-spacing: 6px; }
         @font-face { font-family:"Thrones of Westeros"; src: url('https://static.tumblr.com/dr1ak2t/Wxuq86swy/gameofthrones-webfont.ttf') }
         .marker-sigil[data-region="norte"]:hover .region-name {letter-spacing: 0.02em}
@@ -169,7 +209,7 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
         .clima-region-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px; color: rgba(209, 213, 219, 0.85); white-space: nowrap; }
 
         /* Cruce rápido y simultáneo entre variantes, sin pausa. */
-        .clima-card-full, .clima-card-simple {
+        .clima-card-full, .clima-card-simple, .clima-card-minimal {
             opacity: 0;
             transform: scale(0.98);
             pointer-events: none;
@@ -178,8 +218,12 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
         .clima-card-simple .clima-card-row { gap: 5px; width: 100%; justify-content: space-between; }
         .clima-card-simple .clima-temp-actual { font-size: 15px; }
         .clima-card-simple .clima-icon-wrap { width: 24px; height: 24px; font-size: 14px; }
+        /* Primer nivel de regiones: solo icono y nombre, en una fila compacta. */
+        .clima-card-minimal { flex-direction: row; align-items: center; gap: 7px; padding: 6px 10px; }
+        .clima-card-minimal .clima-icon-wrap { width: 20px; height: 20px; font-size: 14px; flex: none; }
         .map-app.clima-visible:not(.clima-transitioning):not(.wide-view) .clima-card-full,
-        .map-app.clima-visible:not(.clima-transitioning).wide-view .clima-card-simple {
+        .map-app.clima-visible:not(.clima-transitioning).wide-view:not(.overview-view) .clima-card-simple,
+        .map-app.clima-visible:not(.clima-transitioning).overview-view .clima-card-minimal {
             opacity: 1;
             transform: scale(1);
             pointer-events: auto;
@@ -319,6 +363,12 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
 
     <div id="map" style="width: 100%; height: 100%;"></div>
     <div id="climaPopupPortal"></div>
+    <button type="button" class="fullscreen-toggle" id="fullscreenToggle"
+        title="Pantalla completa" aria-label="Pantalla completa" aria-pressed="false"
+        onclick="toggleFullscreen()">
+        <i class="fas fa-expand" aria-hidden="true"></i>
+    </button>
+    <div class="fullscreen-status" id="fullscreenStatus" role="status" hidden></div>
 
     <div class="custom-zoom-controls">
         <div class="zoom-button" onclick="changeZoom(1)" title="Acercar"><i class="fas fa-plus"></i></div>
@@ -334,7 +384,7 @@ border: 0}::-webkit-scrollbar {width: 4px}::-webkit-scrollbar-track {background:
 <script>
 // --- DATOS DE LAS REGIONES ---
 const datos = {
-    "f9126568": { t: "Poniente", d: "El continente donde siete reinos luchan por el Trono de Hierro. Un vasto territorio que abarca desde el Muro en el norte hasta las costas meridionales de Dorne, marcado por un clima templado y estaciones erráticas que pueden durar años. Es una tierra de contrastes, con fortalezas imponentes, ciudades bulliciosas y extensos bosques, unida bajo un gobierno central pero constantemente fracturada por las ambiciones de las grandes casas nobles.", img: "https://i.imgur.com/5p3e68o.png", regionClass: "poniente", coords: [1500, 900], esReino: true, esPoniente: true },
+    "f9126568": { t: "Poniente", d: "El continente donde siete reinos luchan por el Trono de Hierro. Un vasto territorio que abarca desde el Muro en el norte hasta las costas meridionales de Dorne, marcado por un clima templado y estaciones erráticas que pueden durar años. Es una tierra de contrastes, con fortalezas imponentes, ciudades bulliciosas y extensos bosques, unida bajo un gobierno central pero constantemente fracturada por las ambiciones de las grandes casas nobles.", img: "https://i.imgur.com/5p3e68o.png", regionClass: "poniente", coords: [1500, 900], esReino: true, esPoniente: true, esContinente: true },
     
     "f9126567": { t: "El Norte", d: "El reino más antiguo y extenso de Poniente, gobernado por la <b>Casa Stark</b> desde <b>Invernalia</b> con el lema <i>Se Acerca el Invierno</i>. Es una región de bosques densos, montañas escarpadas y fríos intensos, donde los inviernos pueden ser mortales. Su gente es conocida por su resistencia, lealtad y carácter estoico, aferrándose a tradiciones antiguas que perduran desde la Era de los Héroes.", img: "https://i.imgur.com/5oXow2q.jpeg", regionClass: "norte", coords: [1970, 1000], esReino: false },
     
@@ -540,7 +590,16 @@ function climaBadgeHTML(regionKey) {
             <span class="clima-region-name">${region.t}</span>
         </div>`;
 
-    return `<div class="clima-variants">${cardFull}${cardSimple}</div>`;
+    // Variante mínima para el primer tramo donde aparecen los nombres de las regiones.
+    const cardMinimal = `
+        <div class="clima-card clima-card-minimal" data-region-key="${regionKey}">
+            <div class="clima-icon-wrap" role="img" aria-label="Clima: ${clima}" data-region-key="${regionKey}">
+                ${iconHTML(meta)}
+            </div>
+            <span class="clima-region-name">${region.t}</span>
+        </div>`;
+
+    return `<div class="clima-variants">${cardFull}${cardSimple}${cardMinimal}</div>`;
 }
 
 // Refresca solo el número de temperatura actual de cada tarjeta ya pintada (cambia cada hora sin recargar la página).
@@ -728,11 +787,19 @@ const sideImg = document.getElementById('sideImg');
 const sideLink = document.getElementById('sideLink');
 const sideButtonText = document.getElementById('sideButtonText');
 
+// La vista de continentes es el zoom mínimo real, que cambia con el tamaño del iframe.
+function isWorldView(zoom = map.getZoom()) {
+    return zoom <= map.getMinZoom() + 0.000001;
+}
+
 // --- FUNCIÓN PARA ACTUALIZAR VISIBILIDAD DE MARCADORES ---
 function updateMarkerVisibility() {
     const zoom = map.getZoom();
-    // Mismo umbral que usa Poniente: a este zoom, Poniente y todos los nombres de región conviven en pantalla.
-    document.querySelector('.map-app').classList.toggle('wide-view', zoom <= -0.2);
+    const worldView = isWorldView(zoom);
+    const app = document.querySelector('.map-app');
+    app.classList.toggle('wide-view', zoom <= -0.2);
+    // Las regiones aparecen en -1.5; mantener la variante mínima también en el siguiente paso.
+    app.classList.toggle('overview-view', zoom < -0.5);
     Object.keys(markers).forEach(key => {
         const marker = markers[key];
         if (!marker || !marker._icon) return;
@@ -740,20 +807,11 @@ function updateMarkerVisibility() {
         const westerosEl = marker._icon.querySelector('.westeros-marker');
         const regionEl = marker._icon.querySelector('.marker-sigil');
 
-        if (reg.esPoniente && westerosEl) {
-            if (isSidebarOpen) {
-                westerosEl.classList.remove('hidden');
-            } else {
-                if (zoom > -0.2) westerosEl.classList.add('hidden');
-                else westerosEl.classList.remove('hidden');
-            }
+        if ((reg.esContinente || reg.esPoniente) && westerosEl) {
+            westerosEl.classList.toggle('hidden', !worldView && !isSidebarOpen && zoom > -0.2);
         } else if (regionEl) {
-            if (isSidebarOpen) {
-                regionEl.classList.remove('hidden');
-            } else {
-                if (zoom < -1.5) regionEl.classList.add('hidden');
-                else regionEl.classList.remove('hidden');
-            }
+            // La vista del mapa completo solo muestra continentes, incluso con clima o sidebar activos.
+            regionEl.classList.toggle('hidden', worldView || (!isSidebarOpen && zoom < -1.5));
         }
     });
 }
@@ -819,8 +877,8 @@ Object.keys(datos).forEach(key => {
     const reg = datos[key];
     let html, iconSize, iconAnchor, isHidden;
 
-    if (reg.esPoniente) {
-        isHidden = currentZoom > -0.2;
+    if (reg.esContinente || reg.esPoniente) {
+        isHidden = !isWorldView(currentZoom) && currentZoom > -0.2;
         html = `
             <div class="westeros-marker ${isHidden ? 'hidden' : ''}" data-region="${reg.regionClass}">
                 <span class="westeros-name">${reg.t}</span>
@@ -828,7 +886,7 @@ Object.keys(datos).forEach(key => {
         iconSize = [250, 100];
         iconAnchor = [125, 50];
     } else {
-        isHidden = currentZoom < -1.5;
+        isHidden = isWorldView(currentZoom) || currentZoom < -1.5;
         html = `
             <div class="marker-sigil ${isHidden ? 'hidden' : ''}" data-region="${reg.regionClass}">
                 <div class="clima-collapse">${climaBadgeHTML(key)}</div>
@@ -970,8 +1028,52 @@ function resetMap() {
     }, 1100);
 }
 
+// --- PANTALLA COMPLETA (el iframe del foro debe permitir fullscreen) ---
+const fullscreenToggle = document.getElementById('fullscreenToggle');
+const fullscreenStatus = document.getElementById('fullscreenStatus');
+let fullscreenStatusTimer;
+
+async function toggleFullscreen() {
+    const app = document.querySelector('.map-app');
+    if (fullscreenToggle.disabled) return;
+    fullscreenToggle.disabled = true;
+    fullscreenStatus.hidden = true;
+    clearTimeout(fullscreenStatusTimer);
+    ocultarClimaPopup();
+    try {
+        if (document.fullscreenElement) {
+            await document.exitFullscreen();
+        } else if (app.requestFullscreen && document.fullscreenEnabled) {
+            // Invocar directamente desde el clic conserva la activación del usuario.
+            await app.requestFullscreen();
+        } else {
+            throw new Error('Pantalla completa no disponible');
+        }
+    } catch (error) {
+        fullscreenStatus.textContent = 'No se puede activar la pantalla completa en esta vista.';
+        fullscreenStatus.hidden = false;
+        fullscreenStatusTimer = setTimeout(() => { fullscreenStatus.hidden = true; }, 5000);
+    } finally {
+        fullscreenToggle.disabled = false;
+    }
+}
+
+// También sincroniza el botón al salir con Escape o desde los controles del navegador.
+document.addEventListener('fullscreenchange', () => {
+    const active = document.fullscreenElement === document.querySelector('.map-app');
+    const label = active ? 'Salir de pantalla completa' : 'Pantalla completa';
+    fullscreenToggle.title = label;
+    fullscreenToggle.setAttribute('aria-label', label);
+    fullscreenToggle.setAttribute('aria-pressed', String(active));
+    fullscreenToggle.querySelector('i').className = active ? 'fas fa-compress' : 'fas fa-expand';
+    fullscreenStatus.hidden = true;
+    ocultarClimaPopup();
+    requestAnimationFrame(refreshMapLayout);
+});
+
 // --- AJUSTE POR REDIMENSIONADO ---
-window.addEventListener('resize', () => {
+function refreshMapLayout() {
+    map.invalidateSize({ pan: false });
     dynamicMinZoom = calculateMinZoom();
     map.setMinZoom(dynamicMinZoom);
     if (!isAnimating) {
@@ -981,14 +1083,13 @@ window.addEventListener('resize', () => {
     }
     adjustTextScale();
     updateMarkerVisibility();
-});
+    checkZoomLimits();
+}
+window.addEventListener('resize', refreshMapLayout);
 
 // --- INICIALIZACIÓN ---
-setTimeout(() => {
-    map.invalidateSize();
-    adjustTextScale();
-    updateMarkerVisibility();
-}, 300);
+// El DOM y los marcadores ya existen: ajustar antes de mostrar el primer fotograma.
+refreshMapLayout();
 </script>
 </body>
 </html>
